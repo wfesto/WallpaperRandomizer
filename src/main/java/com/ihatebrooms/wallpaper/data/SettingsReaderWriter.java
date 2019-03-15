@@ -2,6 +2,7 @@ package com.ihatebrooms.wallpaper.data;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InvalidClassException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -23,18 +24,25 @@ public class SettingsReaderWriter {
 	private static Map<String, Settings> settingsMap;
 
 	@SuppressWarnings("unchecked")
-	public static String getActiveProfile() throws Exception {
+	public static String getActiveProfile() {
 		if (activeProfile == null || settingsMap == null) {
 			if (Files.exists(Paths.get(path))) {
-				ObjectInputStream inputStream = new ObjectInputStream(new FileInputStream(path));
-				activeProfile = (String) inputStream.readObject();
+				ObjectInputStream inputStream = null;
 				try {
+					inputStream = new ObjectInputStream(new FileInputStream(path));
+					activeProfile = (String) inputStream.readObject();
 					settingsMap = (Map<String, Settings>) inputStream.readObject();
 				} catch (InvalidClassException e) {
 					logger.error(e.getMessage());
 					logger.error("Settings file changed, reverting to defaults");
+				} catch (Exception e) {
+					logger.error("Error reading settings:\n" + e.getMessage());
 				} finally {
-					inputStream.close();
+					try {
+						inputStream.close();
+					} catch (IOException e) {
+						logger.error("Error closing stream:\n" + e.getMessage());
+					}
 				}
 			}
 
@@ -49,16 +57,26 @@ public class SettingsReaderWriter {
 		return activeProfile;
 	}
 
-	public static Map<String, Settings> readSettings() throws Exception {
+	public static Map<String, Settings> readSettings() {
 		getActiveProfile();
 		return settingsMap;
 	}
 
-	public static void writeSettings(String activeProfile, Map<String, Settings> settingsMap) throws Exception {
-		Files.deleteIfExists(Paths.get(path));
-		ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream(path));
-		outputStream.writeObject(activeProfile);
-		outputStream.writeObject(settingsMap);
-		outputStream.close();
+	public static void writeSettings(String activeProfile, Map<String, Settings> settingsMap) {
+		ObjectOutputStream outputStream = null;
+		try {
+			Files.deleteIfExists(Paths.get(path));
+			outputStream = new ObjectOutputStream(new FileOutputStream(path));
+			outputStream.writeObject(activeProfile);
+			outputStream.writeObject(settingsMap);
+		} catch (Exception e) {
+			logger.error("Error writing settings:\n" + e.getMessage());
+		} finally {
+			try {
+				outputStream.close();
+			} catch (IOException e) {
+				logger.error("Error closing stream:\n" + e.getMessage());
+			}
+		}
 	}
 }
