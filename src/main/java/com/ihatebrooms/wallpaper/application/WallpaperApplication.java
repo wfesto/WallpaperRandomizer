@@ -140,31 +140,10 @@ public class WallpaperApplication extends Application {
 		String activeProfile = SettingsReaderWriter.getActiveProfile();
 		Map<String, Settings> settingsMap = SettingsReaderWriter.readSettings();
 		settings = settingsMap.get(activeProfile);
-		//
-		// System.out.println("Active Profile: " + activeProfile);
-		// System.out.println("Map:\n" + settingsMap);
 
 		int colIdx = 0;
 
 		primary.setTitle("Wallpaper Randomizer Settings");
-
-		// TextField profileField = new TextField();
-		// profileField.setEditable(false);
-		// profileField.setText(activeProfile);
-		//
-		// Button newProfileButton = new Button("New");
-		// Button saveProfileButton = new Button("Save");
-		// Button deleteProfileButton = new Button("Delete");
-
-		// HBox profileHBox = new HBox();
-		// profileHBox.setAlignment(Pos.CENTER_LEFT);
-		// profileHBox.setSpacing(10);
-		// profileHBox.getChildren().add(new Label("Profile "));
-		// profileHBox.getChildren().add(profileField);
-		// profileHBox.getChildren().add(newProfileButton);
-		// profileHBox.getChildren().add(saveProfileButton);
-		// profileHBox.getChildren().add(deleteProfileButton);
-		// rootPane.add(profileHBox, 0, colIdx++);
 
 		ToggleGroup modeRadioGroup = new ToggleGroup();
 		RadioButton singleFileRButton = new RadioButton("Static File");
