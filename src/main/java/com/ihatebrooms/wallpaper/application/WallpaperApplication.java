@@ -7,6 +7,9 @@ import java.util.Map;
 import javax.imageio.ImageIO;
 import javax.swing.SwingUtilities;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.ihatebrooms.wallpaper.data.Settings;
 import com.ihatebrooms.wallpaper.data.SettingsReaderWriter;
 import com.ihatebrooms.wallpaper.event.handler.ApplyChangesEventHandler;
@@ -37,6 +40,8 @@ import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 
 public class WallpaperApplication extends Application {
+
+	private static final Logger logger = LogManager.getLogger(WallpaperApplication.class);
 
 	protected ImageView previewImageView = new ImageView();
 	protected Settings settings;
@@ -140,6 +145,9 @@ public class WallpaperApplication extends Application {
 		String activeProfile = SettingsReaderWriter.getActiveProfile();
 		Map<String, Settings> settingsMap = SettingsReaderWriter.readSettings();
 		settings = settingsMap.get(activeProfile);
+
+		logger.trace("Full settings map:\n" + settingsMap.toString());
+		logger.debug("Application loading settings:\n" + settings.toString());
 
 		int colIdx = 0;
 

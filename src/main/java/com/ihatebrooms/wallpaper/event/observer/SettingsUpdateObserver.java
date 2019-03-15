@@ -6,6 +6,9 @@ import java.util.Map;
 import java.util.Observable;
 import java.util.Observer;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.ihatebrooms.wallpaper.data.Settings;
 import com.ihatebrooms.wallpaper.data.SettingsReaderWriter;
 
@@ -16,6 +19,8 @@ import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
 public class SettingsUpdateObserver implements Observer {
+
+	private static final Logger logger = LogManager.getLogger(SettingsUpdateObserver.class);
 
 	protected Stage primaryStage;
 	protected ImageView previewImageView;
@@ -36,7 +41,7 @@ public class SettingsUpdateObserver implements Observer {
 			settingsMap.put("Default", settings);
 			SettingsReaderWriter.writeSettings("Default", settingsMap);
 		} catch (Exception e) {
-			System.out.println(e.getMessage());
+			logger.error(e.getMessage());
 		}
 	}
 

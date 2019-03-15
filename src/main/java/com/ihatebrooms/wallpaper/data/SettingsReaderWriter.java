@@ -10,7 +10,12 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class SettingsReaderWriter {
+
+	private static final Logger logger = LogManager.getLogger(SettingsReaderWriter.class);
 
 	private static final String path = "WRSettings.ini";
 
@@ -26,9 +31,11 @@ public class SettingsReaderWriter {
 				try {
 					settingsMap = (Map<String, Settings>) inputStream.readObject();
 				} catch (InvalidClassException e) {
-					System.out.println("Settings file changed, reverting to defaults");
+					logger.error(e.getMessage());
+					logger.error("Settings file changed, reverting to defaults");
+				} finally {
+					inputStream.close();
 				}
-				inputStream.close();
 			}
 
 			if (settingsMap == null) {
