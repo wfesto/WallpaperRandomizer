@@ -6,6 +6,7 @@ import java.util.Map;
 
 import javax.imageio.ImageIO;
 import javax.swing.SwingUtilities;
+import javax.swing.Timer;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -26,6 +27,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.RadioButton;
@@ -72,19 +74,7 @@ public class WallpaperApplication extends Application {
 			java.awt.Image image = ImageIO.read(imageLoc);
 			java.awt.TrayIcon trayIcon = new java.awt.TrayIcon(image);
 
-			// if the user double-clicks on the tray icon, show the main app
-			// stage.
 			trayIcon.addActionListener(event -> Platform.runLater(this::showStage));
-
-			// java.awt.MenuItem openItem = new java.awt.MenuItem("hello,
-			// world");
-			// openItem.addActionListener(event ->
-			// Platform.runLater(this::showStage));
-
-			// java.awt.Font defaultFont = java.awt.Font.decode(null);
-			// java.awt.Font boldFont =
-			// defaultFont.deriveFont(java.awt.Font.BOLD);
-			// openItem.setFont(boldFont);
 
 			java.awt.MenuItem exitItem = new java.awt.MenuItem("Exit");
 			exitItem.addActionListener(event -> {
@@ -93,12 +83,9 @@ public class WallpaperApplication extends Application {
 			});
 
 			final java.awt.PopupMenu popup = new java.awt.PopupMenu();
-			// popup.add(openItem);
-			// popup.addSeparator();
 			popup.add(exitItem);
 			trayIcon.setPopupMenu(popup);
 
-			// add the application tray icon to the system tray.
 			tray.add(trayIcon);
 		} catch (java.awt.AWTException | IOException e) {
 			System.out.println("Unable to init system tray");
@@ -167,11 +154,24 @@ public class WallpaperApplication extends Application {
 
 		HBox modeHBox = new HBox();
 		VBox modeVBox = new VBox();
+		modeVBox.getChildren().add(new Label("Mode"));
 		modeVBox.getChildren().add(singleFileRButton);
 		modeVBox.getChildren().add(multiFileRButton);
 		modeVBox.getChildren().add(singleDirRButton);
-		modeHBox.getChildren().add(new Label("Mode "));
 		modeHBox.getChildren().add(modeVBox);
+
+		VBox optVBox = new VBox();
+		CheckBox timerCB = new CheckBox(" Randomize List");
+		optVBox.getChildren().add(timerCB);
+		modeHBox.getChildren().add(optVBox);
+
+		TextField changeDelay = new TextField("");
+		HBox delayHBox = new HBox();
+		delayHBox.getChildren().add(new Label("Change delay (seconds) "));
+		delayHBox.getChildren().add(changeDelay);
+		optVBox.getChildren().add(delayHBox);
+
+		modeHBox.setSpacing(10);
 
 		rootPane.add(modeHBox, 0, colIdx);
 
@@ -203,9 +203,14 @@ public class WallpaperApplication extends Application {
 		fileListView.setEditable(false);
 		rootPane.add(fileListView, 0, colIdx++);
 
+		ApplyChangesEventHandler acEventHandler = new ApplyChangesEventHandler(settings);
+
+		Timer timer = new Timer(1000 * 60 * 60, acEventHandler);
+		timer.start();
+
 		modeRadioGroup.selectedToggleProperty().addListener(new ModeChangedListener(settings, previewImageView, currentSelectionField, fileListView));
 		chooseFileButton.setOnAction(new FileChoiceEventHandler(primary, settings, currentSelectionField, fileListView));
-		applyChangesButton.setOnAction(new ApplyChangesEventHandler(settings));
+		applyChangesButton.setOnAction(acEventHandler);
 		settings.addObserver(new SettingsUpdateObserver(primary, previewImageView));
 	}
 

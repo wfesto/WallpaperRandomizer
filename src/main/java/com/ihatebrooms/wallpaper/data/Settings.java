@@ -16,9 +16,11 @@ public class Settings extends Observable implements Serializable {
 	public final static int MODE_MULTI_FILE = 1;
 	public final static int MODE_SINGLE_DIR = 2;
 
+	protected String currentWallpaper;
 	protected String filePath;
 	protected String currentDir;
 	protected int currentMode;
+	protected int changeDelay;
 	protected boolean recurseSubDirs;
 	protected List<String> fileList;
 
@@ -42,6 +44,11 @@ public class Settings extends Observable implements Serializable {
 
 	public void setCurrentMode(int i) {
 		this.currentMode = i;
+		this.update();
+	}
+
+	public void setChangeDelay(int i) {
+		this.changeDelay = i;
 		this.update();
 	}
 
