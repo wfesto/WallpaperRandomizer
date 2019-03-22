@@ -19,6 +19,7 @@ public class SettingsReaderWriter {
 	private static final Logger logger = LogManager.getLogger(SettingsReaderWriter.class);
 
 	private static final String path = "WRSettings.ini";
+	private static final String defaultProfileName = "Default";
 
 	private static String activeProfile;
 	private static Map<String, Settings> settingsMap;
@@ -49,8 +50,8 @@ public class SettingsReaderWriter {
 			if (settingsMap == null) {
 				settingsMap = new HashMap<>();
 				Settings settings = new Settings();
-				settingsMap.put("Default", settings);
-				activeProfile = "Default";
+				settingsMap.put(defaultProfileName, settings);
+				activeProfile = defaultProfileName;
 			}
 		}
 
@@ -62,11 +63,19 @@ public class SettingsReaderWriter {
 		return settingsMap;
 	}
 
-	public static void writeSettings(String activeProfile, Map<String, Settings> settingsMap) {
+	public static void writeSettings(Settings settings) {
+		Map<String, Settings> settingsMap = new HashMap<>();
+		settingsMap.put(defaultProfileName, settings);
+		writeSettings(settingsMap);
+	}
+
+	public static void writeSettings(Map<String, Settings> settingsMap) {
 		ObjectOutputStream outputStream = null;
 		try {
 			Files.deleteIfExists(Paths.get(path));
 			outputStream = new ObjectOutputStream(new FileOutputStream(path));
+			logger.trace("Writing settings:");
+			logger.trace(settingsMap.toString());
 			outputStream.writeObject(activeProfile);
 			outputStream.writeObject(settingsMap);
 		} catch (Exception e) {

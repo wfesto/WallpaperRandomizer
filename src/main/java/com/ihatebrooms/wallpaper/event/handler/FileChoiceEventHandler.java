@@ -1,17 +1,21 @@
 package com.ihatebrooms.wallpaper.event.handler;
 
 import java.io.File;
-import java.util.Arrays;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.ihatebrooms.wallpaper.data.Settings;
 
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
-import javafx.scene.control.ListView;
-import javafx.scene.control.TextField;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.FileChooser.ExtensionFilter;
@@ -23,16 +27,14 @@ import lombok.Data;
 @AllArgsConstructor
 public class FileChoiceEventHandler implements EventHandler<ActionEvent> {
 
+	private static final Logger logger = LogManager.getLogger(FileChoiceEventHandler.class);
+
 	protected Window parentWindow;
 	protected Settings settings;
-	protected TextField currentSelectionTextField;
-	protected ListView<String> fileListView;
-
 	protected static final String[] imgTypes = {"bmp", "jpeg", "jpg", "png"};
 
 	@Override
 	public void handle(ActionEvent arg0) {
-		settings.setCurrentDir(null);
 		settings.setFilePath(null);
 		settings.setFileList(null);
 
@@ -52,13 +54,14 @@ public class FileChoiceEventHandler implements EventHandler<ActionEvent> {
 			if (file != null && isImage(file)) {
 				settings.setFilePath(file.getAbsolutePath());
 				settings.setCurrentDir(file.getParentFile().getAbsolutePath());
-				currentSelectionTextField.setText(file.getAbsolutePath());
 			}
 		} else if (settings.getCurrentMode() == Settings.MODE_MULTI_FILE) {
 			List<File> fileList = fileChooser.showOpenMultipleDialog(parentWindow);
-			List<String> pathStringList = fileList.stream().map(s -> s.getAbsolutePath()).collect(Collectors.toList());
-			settings.getFileList().addAll(pathStringList);
-			fileListView.getItems().addAll(pathStringList);
+			if (CollectionUtils.isNotEmpty(fileList)) {
+				List<String> pathStringList = fileList.stream().map(s -> s.getAbsolutePath()).collect(Collectors.toList());
+				settings.getFileList().addAll(pathStringList);
+				settings.setCurrentDir(new File(pathStringList.get(0)).getParent());
+			}
 		} else if (settings.getCurrentMode() == Settings.MODE_SINGLE_DIR) {
 			DirectoryChooser directoryChooser = new DirectoryChooser();
 			directoryChooser.setTitle("Select directory");
@@ -66,17 +69,34 @@ public class FileChoiceEventHandler implements EventHandler<ActionEvent> {
 				directoryChooser.setInitialDirectory(new File(settings.getCurrentDir()));
 			}
 			File file = directoryChooser.showDialog(parentWindow);
+			List<File> fileList = null;
 			if (file != null) {
 				settings.setCurrentDir(file.getAbsolutePath());
-				currentSelectionTextField.setText(file.getAbsolutePath());
+				try {
+					//@formatter:off
+					fileList = Files.walk(Paths.get(settings.getCurrentDir()))
+						.map(p -> p.toFile())
+						.filter(p -> p.isFile())
+						.filter(p -> isImage(p))
+						.collect(Collectors.toList());
+					//@formatter:on
+					logger.trace("Reading dir: " + settings.getCurrentDir());
+					logger.trace("Files found: " + fileList.toString());
+				} catch (IOException e) {
+					logger.error("Unable to iterate directory:");
+					logger.error(e.getMessage());
+				}
+
 			}
 		}
 	}
 
 	protected boolean isImage(File f) {
-		int length = f.getName().length();
-		String extension = f.getName().substring(length - 3, length);
-		return Arrays.binarySearch(imgTypes, extension) > -1;
+		boolean found = false;
+		for (int i = 0; i < imgTypes.length && !found; ++i) {
+			found = f.getName().toLowerCase().endsWith(imgTypes[i].toLowerCase());
+		}
+		return found;
 	}
 
 }

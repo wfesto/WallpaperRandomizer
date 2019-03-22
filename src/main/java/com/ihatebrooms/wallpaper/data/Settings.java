@@ -21,7 +21,9 @@ public class Settings extends Observable implements Serializable {
 	protected String currentDir;
 	protected int currentMode;
 	protected int changeDelay;
+	protected int listIdx = -1;
 	protected boolean recurseSubDirs;
+	protected boolean randomizeList;
 	protected List<String> fileList;
 
 	public void forceUpdate() {
@@ -52,8 +54,18 @@ public class Settings extends Observable implements Serializable {
 		this.update();
 	}
 
+	public void setListIdx(int i) {
+		this.listIdx = i;
+		this.update();
+	}
+
 	public void setRecurseDirs(boolean b) {
 		this.recurseSubDirs = b;
+		this.update();
+	}
+
+	public void setRandomizeList(boolean b) {
+		this.randomizeList = b;
 		this.update();
 	}
 
@@ -66,5 +78,4 @@ public class Settings extends Observable implements Serializable {
 		this.setChanged();
 		this.notifyObservers();
 	}
-
 }

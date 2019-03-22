@@ -6,23 +6,20 @@ import java.util.Map;
 
 import javax.imageio.ImageIO;
 import javax.swing.SwingUtilities;
-import javax.swing.Timer;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.ihatebrooms.wallpaper.data.Settings;
 import com.ihatebrooms.wallpaper.data.SettingsReaderWriter;
-import com.ihatebrooms.wallpaper.event.handler.ApplyChangesEventHandler;
 import com.ihatebrooms.wallpaper.event.handler.FileChoiceEventHandler;
-import com.ihatebrooms.wallpaper.event.listener.ModeChangedListener;
+import com.ihatebrooms.wallpaper.event.handler.SaveChangesButtonEventHandler;
 import com.ihatebrooms.wallpaper.event.observer.SettingsUpdateObserver;
 
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
-import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -108,23 +105,19 @@ public class WallpaperApplication extends Application {
 		Scene scene = new Scene(rootPane, 600, 480);
 		this.createContent(rootPane, primary);
 		primary.setScene(scene);
-		EventHandler<WindowEvent> handler = new EventHandler<WindowEvent>() {
-			@Override
-			public void handle(WindowEvent event) {
-				settings.forceUpdate();
-			}
-		};
 
-		ChangeListener<Number> changeListener = new ChangeListener<Number>() {
-			@Override
-			public void changed(ObservableValue<? extends Number> Observable, Number oldValue, Number newValue) {
-				settings.forceUpdate();
-			}
-		};
+		int widthSpacing = 80;
+		int heightSpacing = 300;
 
-		primary.addEventHandler(WindowEvent.ANY, handler);
-		primary.widthProperty().addListener(changeListener);
-		primary.heightProperty().addListener(changeListener);
+		primary.addEventHandler(WindowEvent.ANY, x -> settings.forceUpdate());
+		primary.widthProperty().addListener((x, y, z) -> {
+			previewImageView.setFitWidth(primary.getWidth() - widthSpacing);
+			previewImageView.setFitHeight(primary.getHeight() - heightSpacing);
+		});
+		primary.heightProperty().addListener((x, y, z) -> {
+			previewImageView.setFitWidth(primary.getWidth() - widthSpacing);
+			previewImageView.setFitHeight(primary.getHeight() - heightSpacing);
+		});
 
 	}
 
@@ -150,7 +143,7 @@ public class WallpaperApplication extends Application {
 		multiFileRButton.setUserData(Settings.MODE_MULTI_FILE);
 		singleDirRButton.setToggleGroup(modeRadioGroup);
 		singleDirRButton.setUserData(Settings.MODE_SINGLE_DIR);
-		getSelectedRadioButton(modeRadioGroup, settings);
+		setSelectedRadioButton(modeRadioGroup, settings);
 
 		HBox modeHBox = new HBox();
 		VBox modeVBox = new VBox();
@@ -159,30 +152,42 @@ public class WallpaperApplication extends Application {
 		modeVBox.getChildren().add(multiFileRButton);
 		modeVBox.getChildren().add(singleDirRButton);
 		modeHBox.getChildren().add(modeVBox);
+		Button chooseFileButton = new Button("Choose File");
+		modeVBox.getChildren().add(chooseFileButton);
+		modeVBox.setSpacing(5);
 
 		VBox optVBox = new VBox();
-		CheckBox timerCB = new CheckBox(" Randomize List");
-		optVBox.getChildren().add(timerCB);
-		modeHBox.getChildren().add(optVBox);
+
+		CheckBox randomCB = new CheckBox(" Randomize List");
+		randomCB.setAllowIndeterminate(false);
+		randomCB.setSelected(settings.isRandomizeList());
+
+		CheckBox recurseCB = new CheckBox("Recurse Subdirectories");
+		recurseCB.setAllowIndeterminate(false);
+		recurseCB.setSelected(settings.isRecurseSubDirs());
+		optVBox.getChildren().add(randomCB);
+		optVBox.getChildren().add(recurseCB);
+		optVBox.setSpacing(5);
 
 		TextField changeDelay = new TextField("");
+
 		HBox delayHBox = new HBox();
 		delayHBox.getChildren().add(new Label("Change delay (seconds) "));
 		delayHBox.getChildren().add(changeDelay);
 		optVBox.getChildren().add(delayHBox);
 
+		modeHBox.getChildren().add(optVBox);
+
+		VBox buttonVBox = new VBox();
+		Button saveButton = new Button("Save Changes");
+		buttonVBox.getChildren().add(saveButton);
+		Button revertButton = new Button("Revert Changes");
+		buttonVBox.getChildren().add(revertButton);
+		buttonVBox.setSpacing(10);
+
+		modeHBox.getChildren().add(buttonVBox);
 		modeHBox.setSpacing(10);
-
-		rootPane.add(modeHBox, 0, colIdx);
-
-		Button chooseFileButton = new Button("Choose File");
-		Button applyChangesButton = new Button("Apply Changes");
-
-		VBox buttonsVBox = new VBox();
-		buttonsVBox.setSpacing(10);
-		buttonsVBox.getChildren().add(chooseFileButton);
-		buttonsVBox.getChildren().add(applyChangesButton);
-		rootPane.add(buttonsVBox, 1, colIdx++);
+		rootPane.add(modeHBox, 0, colIdx++);
 
 		TextField currentSelectionField = new TextField();
 		currentSelectionField.setEditable(false);
@@ -203,18 +208,41 @@ public class WallpaperApplication extends Application {
 		fileListView.setEditable(false);
 		rootPane.add(fileListView, 0, colIdx++);
 
-		ApplyChangesEventHandler acEventHandler = new ApplyChangesEventHandler(settings);
+		// Timer timer = new Timer(1000 * 60 * 60, acEventHandler);
+		// timer.start();
 
-		Timer timer = new Timer(1000 * 60 * 60, acEventHandler);
-		timer.start();
+		modeRadioGroup.selectedToggleProperty().addListener(new ChangeListener<Toggle>() {
+			@Override
+			public void changed(ObservableValue<? extends Toggle> observable, Toggle oldValue, Toggle newValue) {
+				boolean showImage = false;
+				boolean showFileList = false;
 
-		modeRadioGroup.selectedToggleProperty().addListener(new ModeChangedListener(settings, previewImageView, currentSelectionField, fileListView));
-		chooseFileButton.setOnAction(new FileChoiceEventHandler(primary, settings, currentSelectionField, fileListView));
-		applyChangesButton.setOnAction(acEventHandler);
-		settings.addObserver(new SettingsUpdateObserver(primary, previewImageView));
+				settings.setCurrentMode(((Integer) newValue.getUserData()).intValue());
+				settings.setListIdx(-1);
+
+				if (newValue.getUserData().equals(Settings.MODE_SINGLE_FILE)) {
+					showImage = true;
+				} else if (newValue.getUserData().equals(Settings.MODE_MULTI_FILE)) {
+					showFileList = true;
+				} else if (newValue.getUserData().equals(Settings.MODE_SINGLE_DIR)) {
+					showImage = true;
+				}
+
+				previewImageView.setVisible(showImage);
+				fileListView.setVisible(showFileList);
+			}
+		});
+
+		randomCB.setOnAction(ae -> settings.setRandomizeList(randomCB.isSelected()));
+		recurseCB.setOnAction(ae -> settings.setRecurseDirs(recurseCB.isSelected()));
+
+		chooseFileButton.setOnAction(new FileChoiceEventHandler(primary, settings));
+		saveButton.setOnAction(new SaveChangesButtonEventHandler(settings));
+
+		settings.addObserver(new SettingsUpdateObserver(primary, previewImageView, currentSelectionField, fileListView));
 	}
 
-	private static void getSelectedRadioButton(ToggleGroup group, Settings settings) {
+	private static void setSelectedRadioButton(ToggleGroup group, Settings settings) {
 		for (Toggle button : group.getToggles()) {
 			if (settings.getCurrentMode() == ((Integer) button.getUserData()).intValue()) {
 				button.setSelected(true);
