@@ -7,6 +7,7 @@ import java.util.Map;
 import javax.imageio.ImageIO;
 import javax.swing.SwingUtilities;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -30,6 +31,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -168,6 +170,7 @@ public class WallpaperApplication extends Application {
 		optVBox.setSpacing(5);
 
 		TextField changeDelay = new TextField("");
+		changeDelay.setText(Integer.toString(settings.getChangeDelay() / 1000));
 
 		HBox delayHBox = new HBox();
 		delayHBox.getChildren().add(new Label("Change delay (seconds) "));
@@ -208,17 +211,26 @@ public class WallpaperApplication extends Application {
 		fileListView.getItems().addAll(settings.getFileList());
 		rootPane.add(fileListView, 0, colIdx++);
 
-		// Timer timer = new Timer(1000 * 60 * 60, acEventHandler);
-		// timer.start();
-
 		modeRadioGroup.selectedToggleProperty().addListener((x, y, newVal) -> settings.setCurrentMode(((Integer) newVal.getUserData()).intValue()));
 		randomCB.setOnAction(ae -> settings.setRandomizeList(randomCB.isSelected()));
 		recurseCB.setOnAction(ae -> settings.setRecurseSubDirs(recurseCB.isSelected()));
 
 		chooseFileButton.setOnAction(new FileChoiceEventHandler(primary, settings));
 		saveButton.setOnAction(new SaveChangesButtonEventHandler(settings));
-
 		settings.addObserver(new SettingsUpdateObserver(primary, previewImageView, currentSelectionField, fileListView));
+
+		changeDelay.addEventHandler(KeyEvent.KEY_RELEASED, ae -> {
+			int newVal = 60 * 60;
+			try {
+				newVal = StringUtils.isNotEmpty(changeDelay.getText()) ? Integer.parseInt(changeDelay.getText()) : newVal;
+			} catch (Exception e) {
+				logger.error("Unable to parse value: " + changeDelay.getText());
+				logger.error(e.getMessage());
+			}
+
+			settings.setChangeDelay(1000 * newVal);
+		});
+
 	}
 
 	private static void setSelectedRadioButton(ToggleGroup group, Settings settings) {

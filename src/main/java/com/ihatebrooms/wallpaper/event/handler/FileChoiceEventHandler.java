@@ -69,13 +69,17 @@ public class FileChoiceEventHandler implements EventHandler<ActionEvent> {
 			if (file != null) {
 				settings.setCurrentDir(file.getAbsolutePath());
 				try {
+					int walkDepth = settings.isRecurseSubDirs() ? Integer.MAX_VALUE : 0;
 					//@formatter:off
-					fileList = Files.walk(Paths.get(settings.getCurrentDir()))
+					fileList = Files.walk(Paths.get(settings.getCurrentDir()), walkDepth)
 						.map(p -> p.toFile())
 						.filter(p -> p.isFile())
 						.filter(p -> isImage(p))
 						.collect(toList());
 					//@formatter:on
+					settings.setFilePath(fileList.get(settings.getListIdx()).getAbsolutePath());
+					settings.setFileList(fileList.stream().map(p -> p.getAbsolutePath()).collect(toList()));
+					settings.resetListIdx();
 					logger.trace("Reading dir: " + settings.getCurrentDir());
 					logger.trace("Files found: " + fileList.toString());
 				} catch (IOException e) {

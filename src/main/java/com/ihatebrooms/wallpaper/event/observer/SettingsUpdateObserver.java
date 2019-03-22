@@ -1,6 +1,7 @@
 package com.ihatebrooms.wallpaper.event.observer;
 
 import java.io.FileInputStream;
+import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
 
@@ -26,27 +27,31 @@ public class SettingsUpdateObserver implements Observer {
 	protected TextField currentSelectionTextField;
 	protected ListView<String> fileListView;
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void update(Observable o, Object arg) {
 		Settings settings = (Settings) o;
 
 		currentSelectionTextField.setText(settings.getFilePath());
-		fileListView.getItems().clear();
-		fileListView.getItems().addAll(settings.getFileList());
 
 		boolean showImage = false;
 		boolean showFileList = false;
 
-		settings.setListIdx(-1);
-
 		if (settings.getCurrentMode() == Settings.MODE_SINGLE_FILE) {
 			showImage = true;
 			currentSelectionTextField.setText(settings.getFilePath());
+			fileListView.getItems().clear();
+			settings.setFileList(null);
 		} else if (settings.getCurrentMode() == Settings.MODE_MULTI_FILE) {
 			showFileList = true;
+			if (arg != null && arg instanceof List) {
+				fileListView.getItems().addAll((List<String>) arg);
+			}
 		} else if (settings.getCurrentMode() == Settings.MODE_SINGLE_DIR) {
 			showImage = true;
 			currentSelectionTextField.setText(settings.getCurrentDir());
+			fileListView.getItems().clear();
+			fileListView.getItems().addAll(settings.getFileList());
 		}
 
 		previewImageView.setVisible(showImage);
