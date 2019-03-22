@@ -31,7 +31,26 @@ public class SettingsUpdateObserver implements Observer {
 		Settings settings = (Settings) o;
 
 		currentSelectionTextField.setText(settings.getFilePath());
+		fileListView.getItems().clear();
 		fileListView.getItems().addAll(settings.getFileList());
+
+		boolean showImage = false;
+		boolean showFileList = false;
+
+		settings.setListIdx(-1);
+
+		if (settings.getCurrentMode() == Settings.MODE_SINGLE_FILE) {
+			showImage = true;
+			currentSelectionTextField.setText(settings.getFilePath());
+		} else if (settings.getCurrentMode() == Settings.MODE_MULTI_FILE) {
+			showFileList = true;
+		} else if (settings.getCurrentMode() == Settings.MODE_SINGLE_DIR) {
+			showImage = true;
+			currentSelectionTextField.setText(settings.getCurrentDir());
+		}
+
+		previewImageView.setVisible(showImage);
+		fileListView.setVisible(showFileList);
 
 		try {
 			Image image = null;

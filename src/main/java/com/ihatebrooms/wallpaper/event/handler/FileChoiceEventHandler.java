@@ -1,12 +1,13 @@
 package com.ihatebrooms.wallpaper.event.handler;
 
+import static java.util.stream.Collectors.toList;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.LinkedList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.logging.log4j.LogManager;
@@ -35,18 +36,11 @@ public class FileChoiceEventHandler implements EventHandler<ActionEvent> {
 
 	@Override
 	public void handle(ActionEvent arg0) {
-		settings.setFilePath(null);
-		settings.setFileList(null);
-
 		FileChooser fileChooser = new FileChooser();
 		if (settings.getCurrentDir() != null) {
 			fileChooser.setInitialDirectory(new File(settings.getCurrentDir()));
 		}
-		List<String> imgTypeList = new LinkedList<>();
-		for (String img : imgTypes) {
-			imgTypeList.add("*." + img);
-		}
-		ExtensionFilter imageExtensionFilter = new ExtensionFilter("Images", imgTypeList);
+		ExtensionFilter imageExtensionFilter = new ExtensionFilter("Images", Arrays.stream(imgTypes).map(p -> "*.".concat(p)).collect(toList()));
 		fileChooser.getExtensionFilters().add(imageExtensionFilter);
 
 		if (settings.getCurrentMode() == Settings.MODE_SINGLE_FILE) {
@@ -58,8 +52,10 @@ public class FileChoiceEventHandler implements EventHandler<ActionEvent> {
 		} else if (settings.getCurrentMode() == Settings.MODE_MULTI_FILE) {
 			List<File> fileList = fileChooser.showOpenMultipleDialog(parentWindow);
 			if (CollectionUtils.isNotEmpty(fileList)) {
-				List<String> pathStringList = fileList.stream().map(s -> s.getAbsolutePath()).collect(Collectors.toList());
-				settings.getFileList().addAll(pathStringList);
+				List<String> pathStringList = fileList.stream().map(s -> s.getAbsolutePath()).collect(toList());
+				logger.trace("Adding files:");
+				logger.trace(pathStringList.toString());
+				settings.addFiles(pathStringList);
 				settings.setCurrentDir(new File(pathStringList.get(0)).getParent());
 			}
 		} else if (settings.getCurrentMode() == Settings.MODE_SINGLE_DIR) {
@@ -78,7 +74,7 @@ public class FileChoiceEventHandler implements EventHandler<ActionEvent> {
 						.map(p -> p.toFile())
 						.filter(p -> p.isFile())
 						.filter(p -> isImage(p))
-						.collect(Collectors.toList());
+						.collect(toList());
 					//@formatter:on
 					logger.trace("Reading dir: " + settings.getCurrentDir());
 					logger.trace("Files found: " + fileList.toString());

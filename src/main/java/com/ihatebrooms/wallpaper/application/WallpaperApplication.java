@@ -18,8 +18,6 @@ import com.ihatebrooms.wallpaper.event.observer.SettingsUpdateObserver;
 
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -200,41 +198,22 @@ public class WallpaperApplication extends Application {
 		rootPane.add(currentSelectionField, 0, colIdx++);
 
 		previewImageView.setPreserveRatio(true);
+		previewImageView.setVisible(settings.getCurrentMode() == Settings.MODE_SINGLE_FILE || settings.getCurrentMode() == Settings.MODE_SINGLE_DIR);
 		GridPane.setColumnSpan(previewImageView, 2);
 		rootPane.add(previewImageView, 0, colIdx);
 
 		ListView<String> fileListView = new ListView<>();
-		fileListView.setVisible(false);
+		fileListView.setVisible(settings.getCurrentMode() == Settings.MODE_MULTI_FILE);
 		fileListView.setEditable(false);
+		fileListView.getItems().addAll(settings.getFileList());
 		rootPane.add(fileListView, 0, colIdx++);
 
 		// Timer timer = new Timer(1000 * 60 * 60, acEventHandler);
 		// timer.start();
 
-		modeRadioGroup.selectedToggleProperty().addListener(new ChangeListener<Toggle>() {
-			@Override
-			public void changed(ObservableValue<? extends Toggle> observable, Toggle oldValue, Toggle newValue) {
-				boolean showImage = false;
-				boolean showFileList = false;
-
-				settings.setCurrentMode(((Integer) newValue.getUserData()).intValue());
-				settings.setListIdx(-1);
-
-				if (newValue.getUserData().equals(Settings.MODE_SINGLE_FILE)) {
-					showImage = true;
-				} else if (newValue.getUserData().equals(Settings.MODE_MULTI_FILE)) {
-					showFileList = true;
-				} else if (newValue.getUserData().equals(Settings.MODE_SINGLE_DIR)) {
-					showImage = true;
-				}
-
-				previewImageView.setVisible(showImage);
-				fileListView.setVisible(showFileList);
-			}
-		});
-
+		modeRadioGroup.selectedToggleProperty().addListener((x, y, newVal) -> settings.setCurrentMode(((Integer) newVal.getUserData()).intValue()));
 		randomCB.setOnAction(ae -> settings.setRandomizeList(randomCB.isSelected()));
-		recurseCB.setOnAction(ae -> settings.setRecurseDirs(recurseCB.isSelected()));
+		recurseCB.setOnAction(ae -> settings.setRecurseSubDirs(recurseCB.isSelected()));
 
 		chooseFileButton.setOnAction(new FileChoiceEventHandler(primary, settings));
 		saveButton.setOnAction(new SaveChangesButtonEventHandler(settings));
