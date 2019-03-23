@@ -10,6 +10,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.ihatebrooms.wallpaper.application.WallpaperUpdater;
+import com.ihatebrooms.wallpaper.data.DirectoryWalker;
 import com.ihatebrooms.wallpaper.data.Settings;
 import com.ihatebrooms.wallpaper.data.SettingsReaderWriter;
 
@@ -31,11 +32,14 @@ public class SaveChangesButtonEventHandler implements EventHandler<ActionEvent>,
 
 	@Override
 	public void handle(ActionEvent arg0) {
+
 		SettingsReaderWriter.writeSettings(settings);
 
 		if (settings.getCurrentMode() == Settings.MODE_SINGLE_FILE && settings.getFilePath() != null) {
+			stopTimer();
 			updateWallpaper(settings.getFilePath());
 		} else if (settings.getCurrentMode() == Settings.MODE_SINGLE_DIR && settings.getCurrentDir() != null) {
+			DirectoryWalker.updateSettingsDirectoryFiles(settings);
 			createAndStartTimer(settings.getChangeDelay());
 		} else if (settings.getCurrentMode() == Settings.MODE_MULTI_FILE && CollectionUtils.isNotEmpty(settings.getFileList())) {
 			createAndStartTimer(settings.getChangeDelay());
@@ -44,6 +48,10 @@ public class SaveChangesButtonEventHandler implements EventHandler<ActionEvent>,
 
 	@Override
 	public void actionPerformed(java.awt.event.ActionEvent arg0) {
+		if (settings.getCurrentMode() == Settings.MODE_SINGLE_FILE) {
+			return;
+		}
+
 		int newIdx = 0;
 		if (settings.isRandomizeList()) {
 			newIdx = new Random(System.currentTimeMillis()).nextInt(settings.getFileList().size());
@@ -70,13 +78,16 @@ public class SaveChangesButtonEventHandler implements EventHandler<ActionEvent>,
 	}
 
 	protected void createAndStartTimer(int msDelay) {
+		this.actionPerformed(null);
 		stopTimer();
+		logger.trace("Starting timer");
 		timer = new Timer(settings.getChangeDelay(), this);
 		timer.setRepeats(true);
 		timer.start();
 	}
 
 	protected void stopTimer() {
+		logger.trace("Stopping timer");
 		if (this.timer != null && this.timer.isRunning()) {
 			this.timer.stop();
 		}

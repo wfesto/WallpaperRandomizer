@@ -211,13 +211,30 @@ public class WallpaperApplication extends Application {
 		fileListView.getItems().addAll(settings.getFileList());
 		rootPane.add(fileListView, 0, colIdx++);
 
-		modeRadioGroup.selectedToggleProperty().addListener((x, y, newVal) -> settings.setCurrentMode(((Integer) newVal.getUserData()).intValue()));
 		randomCB.setOnAction(ae -> settings.setRandomizeList(randomCB.isSelected()));
 		recurseCB.setOnAction(ae -> settings.setRecurseSubDirs(recurseCB.isSelected()));
 
 		chooseFileButton.setOnAction(new FileChoiceEventHandler(primary, settings));
 		saveButton.setOnAction(new SaveChangesButtonEventHandler(settings));
 		settings.addObserver(new SettingsUpdateObserver(primary, previewImageView, currentSelectionField, fileListView));
+
+		modeRadioGroup.selectedToggleProperty().addListener((x, y, newToggle) -> {
+			int newVal = ((Integer) newToggle.getUserData()).intValue();
+			settings.setCurrentMode(newVal);
+			boolean hasList = true;
+			recurseCB.setDisable(true);
+
+			if (newVal == Settings.MODE_SINGLE_FILE) {
+				hasList = false;
+			} else if (newVal == Settings.MODE_SINGLE_DIR) {
+				recurseCB.setDisable(false);
+			} else if (newVal == Settings.MODE_MULTI_FILE) {
+
+			}
+
+			randomCB.setDisable(hasList);
+
+		});
 
 		changeDelay.addEventHandler(KeyEvent.KEY_RELEASED, ae -> {
 			int newVal = 60 * 60;
@@ -230,6 +247,10 @@ public class WallpaperApplication extends Application {
 
 			settings.setChangeDelay(1000 * newVal);
 		});
+
+		if (!(((Integer) modeRadioGroup.getSelectedToggle().getUserData()).intValue() == Settings.MODE_SINGLE_FILE)) {
+			saveButton.fire();
+		}
 
 	}
 

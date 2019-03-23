@@ -47,6 +47,7 @@ public class Settings extends Observable implements Serializable {
 	public void setCurrentMode(int i) {
 		this.currentMode = i;
 		this.listIdx = -1;
+		this.setFileList(null);
 		this.update();
 	}
 

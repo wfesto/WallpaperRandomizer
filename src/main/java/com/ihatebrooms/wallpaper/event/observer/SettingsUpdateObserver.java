@@ -57,15 +57,17 @@ public class SettingsUpdateObserver implements Observer {
 		previewImageView.setVisible(showImage);
 		fileListView.setVisible(showFileList);
 
-		try {
-			Image image = null;
-			if (settings.getFilePath() != null) {
-				image = new Image(new FileInputStream(settings.getFilePath()));
-			}
+		if (showImage) {
+			try {
+				Image image = null;
+				if (settings.getFilePath() != null) {
+					image = new Image(new FileInputStream(settings.getFilePath()));
+				}
 
-			previewImageView.setImage(image);
-		} catch (Exception e) {
-			logger.error(e.getMessage());
+				previewImageView.setImage(image);
+			} catch (Exception e) {
+				logger.error(e.getMessage());
+			}
 		}
 	}
 }
