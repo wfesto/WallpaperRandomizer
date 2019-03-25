@@ -23,15 +23,18 @@ public class SaveChangesButtonEventHandler implements EventHandler<ActionEvent>,
 
 	private static final Logger logger = LogManager.getLogger(SaveChangesButtonEventHandler.class);
 
+	protected Settings unsavedSettings;
 	protected Settings settings;
 	protected Timer timer;
 
-	public SaveChangesButtonEventHandler(Settings settings) {
+	public SaveChangesButtonEventHandler(Settings unsavedSettings, Settings settings) {
+		this.unsavedSettings = unsavedSettings;
 		this.settings = settings;
 	}
 
 	@Override
 	public void handle(ActionEvent arg0) {
+		settings = (Settings) unsavedSettings.clone();
 
 		SettingsReaderWriter.writeSettings(settings);
 

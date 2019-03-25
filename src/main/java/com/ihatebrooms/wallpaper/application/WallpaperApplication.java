@@ -16,6 +16,7 @@ import com.ihatebrooms.wallpaper.data.SettingsReaderWriter;
 import com.ihatebrooms.wallpaper.event.handler.FileChoiceEventHandler;
 import com.ihatebrooms.wallpaper.event.handler.SaveChangesButtonEventHandler;
 import com.ihatebrooms.wallpaper.event.observer.SettingsUpdateObserver;
+import com.ihatebrooms.wallpaper.javafx.scene.image.ImageViewExt;
 
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -30,7 +31,6 @@ import javafx.scene.control.RadioButton;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleGroup;
-import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
@@ -42,8 +42,9 @@ public class WallpaperApplication extends Application {
 
 	private static final Logger logger = LogManager.getLogger(WallpaperApplication.class);
 
-	protected ImageView previewImageView = new ImageView();
+	protected ImageViewExt previewImageView = new ImageViewExt();
 	protected Settings settings;
+	protected Settings unsavedSettings;
 	protected Stage primary;
 
 	public static void main(String[] args) {
@@ -109,7 +110,11 @@ public class WallpaperApplication extends Application {
 		int widthSpacing = 80;
 		int heightSpacing = 300;
 
-		primary.addEventHandler(WindowEvent.ANY, x -> settings.forceUpdate());
+		primary.addEventHandler(WindowEvent.ANY, x -> {
+			previewImageView.setFitWidth(primary.getWidth() - widthSpacing);
+			previewImageView.setFitHeight(primary.getHeight() - heightSpacing);
+		});
+
 		primary.widthProperty().addListener((x, y, z) -> {
 			previewImageView.setFitWidth(primary.getWidth() - widthSpacing);
 			previewImageView.setFitHeight(primary.getHeight() - heightSpacing);
@@ -125,6 +130,7 @@ public class WallpaperApplication extends Application {
 		String activeProfile = SettingsReaderWriter.getActiveProfile();
 		Map<String, Settings> settingsMap = SettingsReaderWriter.readSettings();
 		settings = settingsMap.get(activeProfile);
+		unsavedSettings = (Settings) settings.clone();
 
 		logger.trace("Full settings map:\n" + settingsMap.toString());
 		logger.debug("Application loading settings:\n" + settings.toString());
@@ -161,10 +167,12 @@ public class WallpaperApplication extends Application {
 		CheckBox randomCB = new CheckBox(" Randomize List");
 		randomCB.setAllowIndeterminate(false);
 		randomCB.setSelected(settings.isRandomizeList());
+		randomCB.setDisable(settings.getCurrentMode() == Settings.MODE_SINGLE_FILE);
 
 		CheckBox recurseCB = new CheckBox("Recurse Subdirectories");
 		recurseCB.setAllowIndeterminate(false);
 		recurseCB.setSelected(settings.isRecurseSubDirs());
+		recurseCB.setDisable(settings.getCurrentMode() != Settings.MODE_SINGLE_DIR);
 		optVBox.getChildren().add(randomCB);
 		optVBox.getChildren().add(recurseCB);
 		optVBox.setSpacing(5);
@@ -181,6 +189,7 @@ public class WallpaperApplication extends Application {
 
 		VBox buttonVBox = new VBox();
 		Button saveButton = new Button("Save Changes");
+		saveButton.setDisable(true);
 		buttonVBox.getChildren().add(saveButton);
 		Button revertButton = new Button("Revert Changes");
 		buttonVBox.getChildren().add(revertButton);
@@ -190,18 +199,19 @@ public class WallpaperApplication extends Application {
 		modeHBox.setSpacing(10);
 		rootPane.add(modeHBox, 0, colIdx++);
 
-		TextField currentSelectionField = new TextField();
-		currentSelectionField.setEditable(false);
+		TextField currentSelectionTextField = new TextField();
+		currentSelectionTextField.setEditable(false);
 		if (settings.getFilePath() != null) {
-			currentSelectionField.setText(settings.getFilePath());
+			currentSelectionTextField.setText(settings.getFilePath());
 		} else {
-			currentSelectionField.setText(settings.getCurrentDir());
+			currentSelectionTextField.setText(settings.getCurrentDir());
 		}
-		GridPane.setColumnSpan(currentSelectionField, 2);
-		rootPane.add(currentSelectionField, 0, colIdx++);
+		GridPane.setColumnSpan(currentSelectionTextField, 2);
+		rootPane.add(currentSelectionTextField, 0, colIdx++);
 
 		previewImageView.setPreserveRatio(true);
 		previewImageView.setVisible(settings.getCurrentMode() == Settings.MODE_SINGLE_FILE || settings.getCurrentMode() == Settings.MODE_SINGLE_DIR);
+		previewImageView.setImage(settings.getFilePath());
 		GridPane.setColumnSpan(previewImageView, 2);
 		rootPane.add(previewImageView, 0, colIdx);
 
@@ -211,44 +221,53 @@ public class WallpaperApplication extends Application {
 		fileListView.getItems().addAll(settings.getFileList());
 		rootPane.add(fileListView, 0, colIdx++);
 
-		randomCB.setOnAction(ae -> settings.setRandomizeList(randomCB.isSelected()));
-		recurseCB.setOnAction(ae -> settings.setRecurseSubDirs(recurseCB.isSelected()));
+		randomCB.setOnAction(ae -> {
+			unsavedSettings.setRandomizeList(randomCB.isSelected());
+			saveButton.setDisable(false);
+		});
+		recurseCB.setOnAction(ae -> {
+			unsavedSettings.setRecurseSubDirs(recurseCB.isSelected());
+			saveButton.setDisable(false);
+		});
 
-		chooseFileButton.setOnAction(new FileChoiceEventHandler(primary, settings));
-		saveButton.setOnAction(new SaveChangesButtonEventHandler(settings));
-		settings.addObserver(new SettingsUpdateObserver(primary, previewImageView, currentSelectionField, fileListView));
+		chooseFileButton.setOnAction(new FileChoiceEventHandler(primary, unsavedSettings));
+		saveButton.setOnAction(new SaveChangesButtonEventHandler(unsavedSettings, settings));
 
 		modeRadioGroup.selectedToggleProperty().addListener((x, y, newToggle) -> {
 			int newVal = ((Integer) newToggle.getUserData()).intValue();
-			settings.setCurrentMode(newVal);
+			unsavedSettings.setCurrentMode(newVal);
 			boolean hasList = true;
+			String newFileButtonText = "";
 			recurseCB.setDisable(true);
 
 			if (newVal == Settings.MODE_SINGLE_FILE) {
 				hasList = false;
+				newFileButtonText = "Choose File";
 			} else if (newVal == Settings.MODE_SINGLE_DIR) {
 				recurseCB.setDisable(false);
+				newFileButtonText = "Choose Dir";
 			} else if (newVal == Settings.MODE_MULTI_FILE) {
-
+				newFileButtonText = "Add File(s)";
 			}
-
-			randomCB.setDisable(hasList);
-
+			randomCB.setDisable(!hasList);
+			saveButton.setDisable(false);
+			chooseFileButton.setText(newFileButtonText);
 		});
 
 		changeDelay.addEventHandler(KeyEvent.KEY_RELEASED, ae -> {
 			int newVal = 60 * 60;
 			try {
 				newVal = StringUtils.isNotEmpty(changeDelay.getText()) ? Integer.parseInt(changeDelay.getText()) : newVal;
+				saveButton.setDisable(false);
 			} catch (Exception e) {
 				logger.error("Unable to parse value: " + changeDelay.getText());
 				logger.error(e.getMessage());
 			}
-
-			settings.setChangeDelay(1000 * newVal);
+			unsavedSettings.setChangeDelay(1000 * newVal);
 		});
 
-		if (!(((Integer) modeRadioGroup.getSelectedToggle().getUserData()).intValue() == Settings.MODE_SINGLE_FILE)) {
+		unsavedSettings.addObserver(new SettingsUpdateObserver(primary, previewImageView, currentSelectionTextField, fileListView, saveButton));
+		if (((Integer) modeRadioGroup.getSelectedToggle().getUserData()).intValue() != Settings.MODE_SINGLE_FILE) {
 			saveButton.fire();
 		}
 

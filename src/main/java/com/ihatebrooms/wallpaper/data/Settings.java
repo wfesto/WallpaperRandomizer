@@ -5,12 +5,17 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Observable;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 @Data
 @EqualsAndHashCode(callSuper = false)
-public class Settings extends Observable implements Serializable {
+public class Settings extends Observable implements Serializable, Cloneable {
+
+	private static final Logger logger = LogManager.getLogger(Settings.class);
 
 	public final static int MODE_SINGLE_FILE = 0;
 	public final static int MODE_MULTI_FILE = 1;
@@ -26,29 +31,24 @@ public class Settings extends Observable implements Serializable {
 	protected boolean randomizeList;
 	protected List<String> fileList;
 
-	public void forceUpdate() {
-		this.update();
-	}
-
 	public void addFiles(List<String> newList) {
 		this.getFileList().addAll(newList);
-		this.update(newList);
+	}
+
+	public void setFilePath(String s) {
+		this.filePath = s;
+		this.setChanged();
+		this.notifyObservers();
 	}
 
 	public void resetListIdx() {
 		this.listIdx = -1;
 	}
 
-	public void setFilePath(String s) {
-		this.filePath = s;
-		this.update();
-	}
-
 	public void setCurrentMode(int i) {
 		this.currentMode = i;
 		this.listIdx = -1;
 		this.setFileList(null);
-		this.update();
 	}
 
 	public List<String> getFileList() {
@@ -56,13 +56,17 @@ public class Settings extends Observable implements Serializable {
 
 	}
 
-	protected void update() {
-		this.setChanged();
-		this.notifyObservers();
-	}
+	public Object clone() {
+		Settings newSettings = new Settings();
+		try {
+			newSettings = (Settings) super.clone();
+			newSettings.getFileList().clear();
+			newSettings.getFileList().addAll(this.getFileList());
+		} catch (CloneNotSupportedException e) {
+			logger.error("Error cloning settings:");
+			logger.error(e.getMessage());
+		}
 
-	protected void update(Object o) {
-		this.setChanged();
-		this.notifyObservers(o);
+		return newSettings;
 	}
 }

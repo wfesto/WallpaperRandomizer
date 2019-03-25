@@ -1,6 +1,5 @@
 package com.ihatebrooms.wallpaper.event.observer;
 
-import java.io.FileInputStream;
 import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
@@ -9,11 +8,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.ihatebrooms.wallpaper.data.Settings;
+import com.ihatebrooms.wallpaper.javafx.scene.image.ImageViewExt;
 
+import javafx.scene.control.Button;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.stage.Stage;
 import lombok.AllArgsConstructor;
 
@@ -23,14 +22,16 @@ public class SettingsUpdateObserver implements Observer {
 	private static final Logger logger = LogManager.getLogger(SettingsUpdateObserver.class);
 
 	protected Stage primaryStage;
-	protected ImageView previewImageView;
+	protected ImageViewExt previewImageView;
 	protected TextField currentSelectionTextField;
 	protected ListView<String> fileListView;
+	protected Button saveButton;
 
 	@SuppressWarnings("unchecked")
 	@Override
 	public void update(Observable o, Object arg) {
 		Settings settings = (Settings) o;
+		saveButton.setDisable(false);
 
 		currentSelectionTextField.setText(settings.getFilePath());
 
@@ -56,18 +57,6 @@ public class SettingsUpdateObserver implements Observer {
 
 		previewImageView.setVisible(showImage);
 		fileListView.setVisible(showFileList);
-
-		if (showImage) {
-			try {
-				Image image = null;
-				if (settings.getFilePath() != null) {
-					image = new Image(new FileInputStream(settings.getFilePath()));
-				}
-
-				previewImageView.setImage(image);
-			} catch (Exception e) {
-				logger.error(e.getMessage());
-			}
-		}
+		previewImageView.setImage(settings.getFilePath());
 	}
 }
