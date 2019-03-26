@@ -51,7 +51,7 @@ public class FileChoiceEventHandler implements EventHandler<ActionEvent> {
 				logger.trace("Adding files:");
 				logger.trace(pathStringList.toString());
 				settings.addFiles(pathStringList);
-				settings.setCurrentDir(new File(pathStringList.get(0)).getParent());
+				settings.setCurrentDir(new File(pathStringList.get(Math.max(settings.getListIdx(), 0))).getParent());
 			}
 		} else if (settings.getCurrentMode() == Settings.MODE_SINGLE_DIR) {
 			DirectoryChooser directoryChooser = new DirectoryChooser();

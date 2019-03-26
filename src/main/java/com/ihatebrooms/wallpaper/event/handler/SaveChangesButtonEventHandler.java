@@ -1,11 +1,15 @@
 package com.ihatebrooms.wallpaper.event.handler;
 
 import java.awt.event.ActionListener;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Random;
 
 import javax.swing.Timer;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -14,61 +18,77 @@ import com.ihatebrooms.wallpaper.data.DirectoryWalker;
 import com.ihatebrooms.wallpaper.data.Settings;
 import com.ihatebrooms.wallpaper.data.SettingsReaderWriter;
 
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
-import lombok.Data;
 
-@Data
 public class SaveChangesButtonEventHandler implements EventHandler<ActionEvent>, ActionListener {
 
 	private static final Logger logger = LogManager.getLogger(SaveChangesButtonEventHandler.class);
 
 	protected Settings unsavedSettings;
-	protected Settings settings;
+	protected Settings savedSettings;
 	protected Timer timer;
 
-	public SaveChangesButtonEventHandler(Settings unsavedSettings, Settings settings) {
+	public SaveChangesButtonEventHandler(Settings unsavedSettings, Settings savedSettings) {
 		this.unsavedSettings = unsavedSettings;
-		this.settings = settings;
+		this.savedSettings = savedSettings;
 	}
 
 	@Override
 	public void handle(ActionEvent arg0) {
-		settings = (Settings) unsavedSettings.clone();
+		logger.trace("Save event triggered");
+		savedSettings = (Settings) unsavedSettings.clone();
 
-		SettingsReaderWriter.writeSettings(settings);
+		SettingsReaderWriter.writeSettings(savedSettings);
 
-		if (settings.getCurrentMode() == Settings.MODE_SINGLE_FILE && settings.getFilePath() != null) {
+		if (savedSettings.getCurrentMode() == Settings.MODE_SINGLE_FILE && savedSettings.getFilePath() != null) {
 			stopTimer();
-			updateWallpaper(settings.getFilePath());
-		} else if (settings.getCurrentMode() == Settings.MODE_SINGLE_DIR && settings.getCurrentDir() != null) {
-			DirectoryWalker.updateSettingsDirectoryFiles(settings);
-			createAndStartTimer(settings.getChangeDelay());
-		} else if (settings.getCurrentMode() == Settings.MODE_MULTI_FILE && CollectionUtils.isNotEmpty(settings.getFileList())) {
-			createAndStartTimer(settings.getChangeDelay());
+			updateWallpaper(savedSettings.getFilePath());
+		} else if (savedSettings.getCurrentMode() == Settings.MODE_SINGLE_DIR && savedSettings.getCurrentDir() != null) {
+			DirectoryWalker.updateSettingsDirectoryFiles(savedSettings);
+			createAndStartTimer(savedSettings.getChangeDelay());
+		} else if (savedSettings.getCurrentMode() == Settings.MODE_MULTI_FILE && CollectionUtils.isNotEmpty(savedSettings.getFileList())) {
+			createAndStartTimer(savedSettings.getChangeDelay());
 		}
 	}
 
 	@Override
 	public void actionPerformed(java.awt.event.ActionEvent arg0) {
-		if (settings.getCurrentMode() == Settings.MODE_SINGLE_FILE) {
+		logger.trace("Save action performed");
+		if (savedSettings.getCurrentMode() == Settings.MODE_SINGLE_FILE) {
 			return;
 		}
 
-		int newIdx = 0;
-		if (settings.isRandomizeList()) {
-			newIdx = new Random(System.currentTimeMillis()).nextInt(settings.getFileList().size());
-		} else {
-			newIdx = settings.getListIdx();
-			++newIdx;
-			if (newIdx >= settings.getFileList().size()) {
-				newIdx = 0;
-			}
-			settings.setListIdx(newIdx);
-			SettingsReaderWriter.writeSettings(settings);
-		}
+		String newWallpaper = null;
 
-		updateWallpaper(settings.getFileList().get(newIdx));
+		boolean found = false;
+		int newIdx = 0;
+		while (!found) {
+			if (savedSettings.isRandomizeList()) {
+				newIdx = new Random(System.currentTimeMillis()).nextInt(savedSettings.getFileList().size());
+			} else {
+				newIdx = savedSettings.getListIdx();
+				++newIdx;
+				if (newIdx >= savedSettings.getFileList().size()) {
+					newIdx = 0;
+				}
+			}
+			newWallpaper = savedSettings.getFileList().get(newIdx);
+			found = isExistingImageFile(newWallpaper);
+		}
+		// TODO: handle edge case of directory / list with no image files at all
+		final String resultingWallpaper = newWallpaper;
+		final int resultingIdx = newIdx;
+		updateWallpaper(newWallpaper);
+		Platform.runLater(new Runnable() {
+			@Override
+			public void run() {
+				savedSettings.setFilePath(resultingWallpaper);
+				savedSettings.setListIdx(resultingIdx);
+				SettingsReaderWriter.writeSettings(savedSettings);
+			}
+		});
 	}
 
 	protected void updateWallpaper(String filePath) {
@@ -84,15 +104,27 @@ public class SaveChangesButtonEventHandler implements EventHandler<ActionEvent>,
 		this.actionPerformed(null);
 		stopTimer();
 		logger.trace("Starting timer");
-		timer = new Timer(settings.getChangeDelay(), this);
+		timer = new Timer(savedSettings.getChangeDelay(), this);
 		timer.setRepeats(true);
 		timer.start();
 	}
 
 	protected void stopTimer() {
-		logger.trace("Stopping timer");
 		if (this.timer != null && this.timer.isRunning()) {
+			logger.trace("Stopping timer");
 			this.timer.stop();
 		}
+	}
+
+	protected boolean isExistingImageFile(String path) {
+		if (StringUtils.isEmpty(path)) {
+			return false;
+		}
+
+		Path filePath = Paths.get(path);
+		boolean exists = Files.exists(filePath);
+		boolean isImageFile = exists && filePath.toFile().isFile() && DirectoryWalker.isImage(filePath.toFile());
+
+		return isImageFile;
 	}
 }

@@ -60,7 +60,7 @@ public class Settings extends Observable implements Serializable, Cloneable {
 		Settings newSettings = new Settings();
 		try {
 			newSettings = (Settings) super.clone();
-			newSettings.getFileList().clear();
+			newSettings.setFileList(new LinkedList<>());
 			newSettings.getFileList().addAll(this.getFileList());
 		} catch (CloneNotSupportedException e) {
 			logger.error("Error cloning settings:");
