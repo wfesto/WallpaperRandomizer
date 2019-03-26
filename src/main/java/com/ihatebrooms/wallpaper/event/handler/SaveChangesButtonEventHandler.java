@@ -28,11 +28,12 @@ public class SaveChangesButtonEventHandler implements EventHandler<ActionEvent>,
 
 	protected Settings unsavedSettings;
 	protected Settings savedSettings;
-	protected Timer timer;
+	protected final Timer timer;
 
 	public SaveChangesButtonEventHandler(Settings unsavedSettings, Settings savedSettings) {
 		this.unsavedSettings = unsavedSettings;
 		this.savedSettings = savedSettings;
+		timer = new Timer(0, this);
 	}
 
 	@Override
@@ -47,9 +48,9 @@ public class SaveChangesButtonEventHandler implements EventHandler<ActionEvent>,
 			updateWallpaper(savedSettings.getFilePath());
 		} else if (savedSettings.getCurrentMode() == Settings.MODE_SINGLE_DIR && savedSettings.getCurrentDir() != null) {
 			DirectoryWalker.updateSettingsDirectoryFiles(savedSettings);
-			createAndStartTimer(savedSettings.getChangeDelay());
+			configureAndStartTimer(savedSettings.getChangeDelay());
 		} else if (savedSettings.getCurrentMode() == Settings.MODE_MULTI_FILE && CollectionUtils.isNotEmpty(savedSettings.getFileList())) {
-			createAndStartTimer(savedSettings.getChangeDelay());
+			configureAndStartTimer(savedSettings.getChangeDelay());
 		}
 	}
 
@@ -100,17 +101,17 @@ public class SaveChangesButtonEventHandler implements EventHandler<ActionEvent>,
 		}
 	}
 
-	protected void createAndStartTimer(int msDelay) {
-		this.actionPerformed(null);
+	protected void configureAndStartTimer(int msDelay) {
 		stopTimer();
 		logger.trace("Starting timer");
-		timer = new Timer(savedSettings.getChangeDelay(), this);
+		timer.setInitialDelay(0);
+		timer.setDelay(msDelay);
 		timer.setRepeats(true);
 		timer.start();
 	}
 
 	protected void stopTimer() {
-		if (this.timer != null && this.timer.isRunning()) {
+		if (this.timer.isRunning()) {
 			logger.trace("Stopping timer");
 			this.timer.stop();
 		}
