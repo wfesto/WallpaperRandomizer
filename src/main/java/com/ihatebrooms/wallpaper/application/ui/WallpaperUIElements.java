@@ -39,11 +39,11 @@ public class WallpaperUIElements {
 
 	public final ToggleGroup modeRadioGroup = new ToggleGroup();
 	public final Button chooseFileButton = new Button();
-	public final Button saveButton = new Button("Save Changes");
-	public final Button revertButton = new Button("Revert Changes");
-	public final Button advanceButton = new Button("Next Wallpaper");
-	public final CheckBox randomCB = new CheckBox(" Randomize List");
-	public final CheckBox recurseCB = new CheckBox("Recurse Subdirectories");
+	public final Button saveButton = new Button(resourceBundle.getString("button.label.saveChangesButton"));
+	public final Button revertButton = new Button(resourceBundle.getString("button.label.revertChangesButton"));
+	public final Button advanceButton = new Button(resourceBundle.getString("button.label.advanceWallpaperButton"));
+	public final CheckBox randomCB = new CheckBox(resourceBundle.getString("checkbox.label.randomizeListCB"));
+	public final CheckBox recurseCB = new CheckBox(resourceBundle.getString("checkbox.label.recurseSubDirsCB"));
 	public final TextField changeDelay = new TextField("");
 	public final TextField currentSelectionTextField = new TextField();
 	public final ImageViewExt previewImageView = new ImageViewExt();
@@ -52,7 +52,7 @@ public class WallpaperUIElements {
 	public WallpaperUIElements(GridPane rootPane, Stage primary) throws Exception {
 
 		int colIdx = 0;
-		primary.setTitle("Wallpaper Randomizer Settings");
+		primary.setTitle(resourceBundle.getString("window.label.title"));
 
 		RadioButton singleFileRButton = new RadioButton(resourceBundle.getString("button.radio.label.singleFileRadioButton"));
 		RadioButton multiFileRButton = new RadioButton(resourceBundle.getString("button.radio.label.multiFileRadioButton"));
