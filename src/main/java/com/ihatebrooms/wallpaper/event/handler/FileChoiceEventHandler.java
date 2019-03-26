@@ -55,7 +55,6 @@ public class FileChoiceEventHandler implements EventHandler<ActionEvent> {
 			}
 		} else if (settings.getCurrentMode() == Settings.MODE_SINGLE_DIR) {
 			DirectoryChooser directoryChooser = new DirectoryChooser();
-			directoryChooser.setTitle("Select directory");
 			if (settings.getCurrentDir() != null) {
 				directoryChooser.setInitialDirectory(new File(settings.getCurrentDir()));
 			}

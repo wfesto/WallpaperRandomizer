@@ -1,5 +1,8 @@
 package com.ihatebrooms.wallpaper.application.ui;
 
+import java.util.Locale;
+import java.util.ResourceBundle;
+
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
@@ -28,14 +31,15 @@ import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 
 //TODO: file list manipulation - reordering, delete, preview, etc
-//TODO: externalize strings
 //TODO: button to advance file
 public class WallpaperUIElements {
 
 	private static final Logger logger = LogManager.getLogger(WallpaperUIElements.class);
 
+	protected final ResourceBundle resourceBundle = ResourceBundle.getBundle("i18n", Locale.getDefault());
+
 	public final ToggleGroup modeRadioGroup = new ToggleGroup();
-	public final Button chooseFileButton = new Button("Choose File");
+	public final Button chooseFileButton = new Button();
 	public final Button saveButton = new Button("Save Changes");
 	public final Button revertButton = new Button("Revert Changes");
 	public final Button advanceButton = new Button("Next Wallpaper");
@@ -47,12 +51,13 @@ public class WallpaperUIElements {
 	public final ListView<String> fileListView = new ListView<>();
 
 	public WallpaperUIElements(GridPane rootPane, Stage primary) throws Exception {
+
 		int colIdx = 0;
 		primary.setTitle("Wallpaper Randomizer Settings");
 
-		RadioButton singleFileRButton = new RadioButton("Static File");
-		RadioButton multiFileRButton = new RadioButton("Custom List");
-		RadioButton singleDirRButton = new RadioButton("Directory");
+		RadioButton singleFileRButton = new RadioButton(resourceBundle.getString("button.radio.label.singleFileRadioButton"));
+		RadioButton multiFileRButton = new RadioButton(resourceBundle.getString("button.radio.label.multiFileRadioButton"));
+		RadioButton singleDirRButton = new RadioButton(resourceBundle.getString("button.radio.label.directoryRadioButton"));
 		singleFileRButton.setToggleGroup(modeRadioGroup);
 		singleFileRButton.setUserData(Settings.MODE_SINGLE_FILE);
 		multiFileRButton.setToggleGroup(modeRadioGroup);
@@ -62,7 +67,7 @@ public class WallpaperUIElements {
 
 		HBox modeHBox = new HBox();
 		VBox modeVBox = new VBox();
-		modeVBox.getChildren().add(new Label("Mode"));
+		modeVBox.getChildren().add(new Label(resourceBundle.getString("button.radio.group.label.fileModeRadioGroup")));
 		modeVBox.getChildren().add(singleFileRButton);
 		modeVBox.getChildren().add(multiFileRButton);
 		modeVBox.getChildren().add(singleDirRButton);
@@ -79,7 +84,7 @@ public class WallpaperUIElements {
 		optVBox.setSpacing(5);
 
 		HBox delayHBox = new HBox();
-		delayHBox.getChildren().add(new Label("Change delay (seconds) "));
+		delayHBox.getChildren().add(new Label(resourceBundle.getString("text.field.label.delayChangeTextField")));
 		delayHBox.getChildren().add(changeDelay);
 		optVBox.getChildren().add(delayHBox);
 
@@ -125,6 +130,7 @@ public class WallpaperUIElements {
 			currentSelectionTextField.setText(settings.getCurrentDir());
 		}
 
+		chooseFileButton.setText(this.getChooseButtonText(settings.getCurrentMode()));
 		advanceButton.setDisable(true);
 		// TODO: advance button to advance list
 		// advanceButton.setDisable(settings.getCurrentMode() ==
@@ -165,17 +171,14 @@ public class WallpaperUIElements {
 			String currentSelectionText = "";
 
 			if (newVal == Settings.MODE_SINGLE_FILE) {
-				newFileButtonText = "Choose File";
 				currentSelectionText = unsavedSettings.getFilePath();
 				fileListView.getItems().clear();
 				unsavedSettings.setFileList(null);
 				random = false;
 			} else if (newVal == Settings.MODE_SINGLE_DIR) {
-				newFileButtonText = "Choose Dir";
 				currentSelectionText = unsavedSettings.getCurrentDir();
 				recurse = true;
 			} else if (newVal == Settings.MODE_MULTI_FILE) {
-				newFileButtonText = "Add File(s)";
 				if (CollectionUtils.isNotEmpty(unsavedSettings.getFileList())) {
 					currentSelectionText = unsavedSettings.getFileList().get(0);
 				}
@@ -188,7 +191,7 @@ public class WallpaperUIElements {
 			previewImageView.setImage(unsavedSettings.getFilePath());
 			previewImageView.setVisible(showImage);
 			fileListView.setVisible(!showImage);
-			chooseFileButton.setText(newFileButtonText);
+			chooseFileButton.setText(this.getChooseButtonText(unsavedSettings.getCurrentMode()));
 			currentSelectionTextField.setText(currentSelectionText);
 		});
 
@@ -228,7 +231,20 @@ public class WallpaperUIElements {
 
 	}
 
-	private static void setSelectedRadioButton(ToggleGroup group, Settings settings) {
+	private String getChooseButtonText(int currentMode) {
+		String newFileButtonText = null;
+
+		if (currentMode == Settings.MODE_SINGLE_FILE) {
+			newFileButtonText = resourceBundle.getString("button.label.dynamic.chooseFileButton.singleFileMode");
+		} else if (currentMode == Settings.MODE_SINGLE_DIR) {
+			newFileButtonText = resourceBundle.getString("button.label.dynamic.chooseFileButton.singleDirMode");
+		} else if (currentMode == Settings.MODE_MULTI_FILE) {
+			newFileButtonText = resourceBundle.getString("button.label.dynamic.chooseFileButton.multiFileMode");
+		}
+		return newFileButtonText;
+	}
+
+	private void setSelectedRadioButton(ToggleGroup group, Settings settings) {
 		for (Toggle button : group.getToggles()) {
 			if (settings.getCurrentMode() == ((Integer) button.getUserData()).intValue()) {
 				button.setSelected(true);
