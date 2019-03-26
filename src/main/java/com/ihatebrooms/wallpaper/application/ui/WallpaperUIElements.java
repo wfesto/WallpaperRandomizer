@@ -154,7 +154,7 @@ public class WallpaperUIElements {
 			saveButton.setDisable(false);
 		});
 
-		chooseFileButton.setOnAction(new FileChoiceEventHandler(primary, unsavedSettings));
+		chooseFileButton.setOnAction(new FileChoiceEventHandler(primary, unsavedSettings, saveButton));
 		saveButton.setOnAction(new SaveChangesButtonEventHandler(unsavedSettings, savedSettings));
 		revertButton.setOnAction(new RevertButtonEventHandler(this, unsavedSettings, savedSettings));
 
@@ -167,7 +167,6 @@ public class WallpaperUIElements {
 			boolean showImage = true;
 			boolean recurse = false;
 			boolean random = true;
-			String newFileButtonText = "";
 			String currentSelectionText = "";
 
 			if (newVal == Settings.MODE_SINGLE_FILE) {

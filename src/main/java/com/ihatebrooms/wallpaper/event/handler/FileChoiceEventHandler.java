@@ -14,6 +14,7 @@ import com.ihatebrooms.wallpaper.data.Settings;
 
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.scene.control.Button;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
@@ -28,6 +29,7 @@ public class FileChoiceEventHandler implements EventHandler<ActionEvent> {
 
 	protected Window parentWindow;
 	protected Settings settings;
+	protected Button saveButton;
 
 	@Override
 	public void handle(ActionEvent arg0) {
@@ -35,6 +37,7 @@ public class FileChoiceEventHandler implements EventHandler<ActionEvent> {
 		if (settings.getCurrentDir() != null) {
 			fileChooser.setInitialDirectory(new File(settings.getCurrentDir()));
 		}
+		boolean selectionMade = false;
 
 		fileChooser.getExtensionFilters().add(DirectoryWalker.getImageExtensionFilter());
 
@@ -43,6 +46,7 @@ public class FileChoiceEventHandler implements EventHandler<ActionEvent> {
 			if (file != null && DirectoryWalker.isImage(file)) {
 				settings.setFilePath(file.getAbsolutePath());
 				settings.setCurrentDir(file.getParentFile().getAbsolutePath());
+				selectionMade = true;
 			}
 		} else if (settings.getCurrentMode() == Settings.MODE_MULTI_FILE) {
 			List<File> fileList = fileChooser.showOpenMultipleDialog(parentWindow);
@@ -52,6 +56,7 @@ public class FileChoiceEventHandler implements EventHandler<ActionEvent> {
 				logger.trace(pathStringList.toString());
 				settings.addFiles(pathStringList);
 				settings.setCurrentDir(new File(pathStringList.get(Math.max(settings.getListIdx(), 0))).getParent());
+				selectionMade = true;
 			}
 		} else if (settings.getCurrentMode() == Settings.MODE_SINGLE_DIR) {
 			DirectoryChooser directoryChooser = new DirectoryChooser();
@@ -63,7 +68,12 @@ public class FileChoiceEventHandler implements EventHandler<ActionEvent> {
 				settings.setCurrentDir(file.getAbsolutePath());
 				DirectoryWalker.updateSettingsDirectoryFiles(settings);
 				settings.resetListIdx();
+				selectionMade = true;
 			}
+		}
+
+		if (selectionMade) {
+			saveButton.setDisable(false);
 		}
 	}
 }
