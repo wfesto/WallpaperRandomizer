@@ -21,6 +21,7 @@ import com.ihatebrooms.wallpaper.data.SettingsReaderWriter;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.scene.control.Button;
 
 public class SaveChangesButtonEventHandler implements EventHandler<ActionEvent>, ActionListener {
 
@@ -28,20 +29,23 @@ public class SaveChangesButtonEventHandler implements EventHandler<ActionEvent>,
 
 	protected Settings unsavedSettings;
 	protected Settings savedSettings;
+	protected final Button saveButton;
 	protected final Timer timer;
 
-	public SaveChangesButtonEventHandler(Settings unsavedSettings, Settings savedSettings) {
+	public SaveChangesButtonEventHandler(Settings unsavedSettings, Settings savedSettings, Button saveButton) {
 		this.unsavedSettings = unsavedSettings;
 		this.savedSettings = savedSettings;
+		this.saveButton = saveButton;
 		timer = new Timer(0, this);
 	}
 
 	@Override
 	public void handle(ActionEvent arg0) {
-		logger.trace("Save event triggered");
-		savedSettings = (Settings) unsavedSettings.clone();
-
-		SettingsReaderWriter.writeSettings(savedSettings);
+		if (arg0.getSource() == saveButton) {
+			logger.trace("Save event triggered");
+			savedSettings = (Settings) unsavedSettings.clone();
+			SettingsReaderWriter.writeSettings(savedSettings);
+		}
 
 		if (savedSettings.getCurrentMode() == Settings.MODE_SINGLE_FILE && savedSettings.getFilePath() != null) {
 			stopTimer();

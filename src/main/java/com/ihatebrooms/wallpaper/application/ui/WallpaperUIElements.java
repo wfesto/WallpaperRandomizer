@@ -31,7 +31,6 @@ import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 
 //TODO: file list manipulation - reordering, delete, preview, etc
-//TODO: button to advance file
 public class WallpaperUIElements {
 
 	private static final Logger logger = LogManager.getLogger(WallpaperUIElements.class);
@@ -131,10 +130,7 @@ public class WallpaperUIElements {
 		}
 
 		chooseFileButton.setText(this.getChooseButtonText(settings.getCurrentMode()));
-		advanceButton.setDisable(true);
-		// TODO: advance button to advance list
-		// advanceButton.setDisable(settings.getCurrentMode() ==
-		// Settings.MODE_SINGLE_FILE);
+		advanceButton.setDisable(settings.getCurrentMode() == Settings.MODE_SINGLE_FILE);
 
 		previewImageView.setVisible(settings.getCurrentMode() == Settings.MODE_SINGLE_FILE || settings.getCurrentMode() == Settings.MODE_SINGLE_DIR);
 		previewImageView.setImage(settings.getFilePath());
@@ -155,8 +151,10 @@ public class WallpaperUIElements {
 		});
 
 		chooseFileButton.setOnAction(new FileChoiceEventHandler(primary, unsavedSettings, saveButton));
-		saveButton.setOnAction(new SaveChangesButtonEventHandler(unsavedSettings, savedSettings));
 		revertButton.setOnAction(new RevertButtonEventHandler(this, unsavedSettings, savedSettings));
+		SaveChangesButtonEventHandler buttonHandler = new SaveChangesButtonEventHandler(unsavedSettings, savedSettings, saveButton);
+		saveButton.setOnAction(buttonHandler);
+		advanceButton.setOnAction(buttonHandler);
 
 		modeRadioGroup.selectedToggleProperty().addListener((x, y, newToggle) -> {
 			currentSelectionTextField.setText(unsavedSettings.getFilePath());
@@ -187,6 +185,7 @@ public class WallpaperUIElements {
 			recurseCB.setDisable(!recurse);
 			randomCB.setDisable(!random);
 			saveButton.setDisable(false);
+			advanceButton.setDisable(!random);
 			previewImageView.setImage(unsavedSettings.getFilePath());
 			previewImageView.setVisible(showImage);
 			fileListView.setVisible(!showImage);
