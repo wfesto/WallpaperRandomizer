@@ -1,5 +1,6 @@
 package com.ihatebrooms.wallpaper.application;
 
+import java.awt.MenuItem;
 import java.awt.SystemTray;
 import java.awt.Toolkit;
 import java.awt.TrayIcon;
@@ -26,7 +27,8 @@ import javafx.scene.Scene;
 import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
 
-//TODO: tray menu
+//TODO: global hotkeys?
+//TODO: white/black listing custom list entries based on time (other conditions?)
 
 public class WallpaperApplication extends Application {
 
@@ -36,6 +38,7 @@ public class WallpaperApplication extends Application {
 	protected Settings savedSettings;
 	protected Settings unsavedSettings;
 	protected Stage primary;
+	protected WallpaperUIElements ui;
 
 	public static void main(String[] args) {
 		launch(args);
@@ -43,9 +46,16 @@ public class WallpaperApplication extends Application {
 
 	@Override
 	public void start(Stage primary) throws Exception {
+		String activeProfile = SettingsReaderWriter.getActiveProfile();
+		Map<String, Settings> settingsMap = SettingsReaderWriter.readSettings();
+		savedSettings = settingsMap.get(activeProfile);
+		unsavedSettings = (Settings) savedSettings.clone();
+
+		logger.trace("Full settings map:\n" + settingsMap.toString());
+		logger.debug("Application loading settings:\n" + savedSettings.toString());
+
 		Platform.setImplicitExit(false);
 		this.primary = primary;
-		SwingUtilities.invokeLater(this::addAppToTray);
 
 		GridPane rootPane = new GridPane();
 		rootPane.setAlignment(Pos.TOP_LEFT);
@@ -55,8 +65,10 @@ public class WallpaperApplication extends Application {
 
 		// TODO: Better resolution handling, possibly saving?
 		Scene scene = new Scene(rootPane, 600, 480);
-		WallpaperUIElements ui = this.createContent(rootPane, primary);
+		ui = this.createContent(rootPane, primary);
 		primary.setScene(scene);
+
+		SwingUtilities.invokeLater(this::addAppToTray);
 
 		if (((Integer) ui.modeRadioGroup.getSelectedToggle().getUserData()).intValue() != Settings.MODE_SINGLE_FILE) {
 			logger.trace("Starting app in non-single file mode");
@@ -67,14 +79,6 @@ public class WallpaperApplication extends Application {
 	}
 
 	private WallpaperUIElements createContent(GridPane rootPane, Stage primary) throws Exception {
-		String activeProfile = SettingsReaderWriter.getActiveProfile();
-		Map<String, Settings> settingsMap = SettingsReaderWriter.readSettings();
-		savedSettings = settingsMap.get(activeProfile);
-		unsavedSettings = (Settings) savedSettings.clone();
-
-		logger.trace("Full settings map:\n" + settingsMap.toString());
-		logger.debug("Application loading settings:\n" + savedSettings.toString());
-
 		WallpaperUIElements ui = new WallpaperUIElements(resourceBundle, rootPane, primary);
 		ui.initializeState(savedSettings);
 		ui.addEventProcessors(primary, unsavedSettings, savedSettings);
@@ -91,7 +95,7 @@ public class WallpaperApplication extends Application {
 
 	private void addAppToTray() {
 		try {
-			Toolkit toolkit = Toolkit.getDefaultToolkit();
+			Toolkit.getDefaultToolkit();
 			if (!SystemTray.isSupported()) {
 				logger.error("No system tray support, application exiting.");
 				Platform.exit();
@@ -105,13 +109,26 @@ public class WallpaperApplication extends Application {
 
 			trayIcon.addActionListener(event -> Platform.runLater(this::showStage));
 
-			java.awt.MenuItem exitItem = new java.awt.MenuItem("tray.menu.label.exit");
-			exitItem.addActionListener(event -> {
+			final java.awt.PopupMenu popup = new java.awt.PopupMenu();
+
+			MenuItem advanceItem = new MenuItem(resourceBundle.getString("tray.menu.label.nextWallpaper"));
+			advanceItem.addActionListener(ae -> {
+				ui.advanceButton.fire();
+			});
+
+			MenuItem exitItem = new MenuItem(resourceBundle.getString("tray.menu.label.exit"));
+			exitItem.addActionListener(ae -> {
 				Platform.exit();
 				tray.remove(trayIcon);
 			});
 
-			final java.awt.PopupMenu popup = new java.awt.PopupMenu();
+			MenuItem showItem = new MenuItem(resourceBundle.getString("tray.menu.label.show"));
+			showItem.addActionListener(ae -> {
+				Platform.runLater(this::showStage);
+			});
+
+			popup.add(showItem);
+			popup.add(advanceItem);
 			popup.add(exitItem);
 			trayIcon.setPopupMenu(popup);
 
