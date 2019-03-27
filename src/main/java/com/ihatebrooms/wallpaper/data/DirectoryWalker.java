@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -19,27 +20,26 @@ public class DirectoryWalker {
 	private static final Logger logger = LogManager.getLogger(DirectoryWalker.class);
 	protected static final String[] imgTypes = {"bmp", "jpeg", "jpg", "png"};
 
-	public static void updateSettingsDirectoryFiles(Settings settings) {
-		List<String> fileList = null;
-		settings.setCurrentDir(settings.getCurrentDir());
+	public static List<String> readDirectoryImageFiles(String directory, boolean recurseSubDirs) {
+		List<String> fileList = new ArrayList<>();
 		try {
-			int walkDepth = settings.isRecurseSubDirs() ? Integer.MAX_VALUE : 1;
+			int walkDepth = recurseSubDirs ? Integer.MAX_VALUE : 1;
 			//@formatter:off
-			fileList = Files.walk(Paths.get(settings.getCurrentDir()), walkDepth)
+			fileList = Files.walk(Paths.get(directory), walkDepth)
 				.map(p -> p.toFile())
 				.filter(p -> p.isFile())
 				.filter(p -> isImage(p))
 				.map(p -> p.getAbsolutePath())
 				.collect(toList());
 			//@formatter:on
-			logger.trace("Reading dir: " + settings.getCurrentDir());
-			logger.trace("Files found: " + fileList.toString());
+			logger.trace("Reading dir: " + directory);
+			logger.trace("Found: " + fileList.size() + " files");
 		} catch (IOException e) {
 			logger.error("Unable to iterate directory:");
 			logger.error(e.getMessage());
 		}
 
-		settings.setFileList(fileList);
+		return fileList;
 	}
 
 	public static ExtensionFilter getImageExtensionFilter() {
