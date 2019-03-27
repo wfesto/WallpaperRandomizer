@@ -45,6 +45,7 @@ public class SaveChangesButtonEventHandler implements EventHandler<ActionEvent>,
 			logger.trace("Save event triggered");
 			savedSettings = (Settings) unsavedSettings.clone();
 			SettingsReaderWriter.writeSettings(savedSettings);
+			saveButton.setDisable(true);
 		}
 
 		if (savedSettings.getCurrentMode() == Settings.MODE_SINGLE_FILE && savedSettings.getFilePath() != null) {
@@ -52,9 +53,9 @@ public class SaveChangesButtonEventHandler implements EventHandler<ActionEvent>,
 			updateWallpaper(savedSettings.getFilePath());
 		} else if (savedSettings.getCurrentMode() == Settings.MODE_SINGLE_DIR && savedSettings.getCurrentDir() != null) {
 			DirectoryWalker.updateSettingsDirectoryFiles(savedSettings);
-			configureAndStartTimer(savedSettings.getChangeDelay());
+			configureAndStartTimer(savedSettings.getCalcDelay());
 		} else if (savedSettings.getCurrentMode() == Settings.MODE_MULTI_FILE && CollectionUtils.isNotEmpty(savedSettings.getFileList())) {
-			configureAndStartTimer(savedSettings.getChangeDelay());
+			configureAndStartTimer(savedSettings.getCalcDelay());
 		}
 	}
 
@@ -107,7 +108,7 @@ public class SaveChangesButtonEventHandler implements EventHandler<ActionEvent>,
 
 	protected void configureAndStartTimer(int msDelay) {
 		stopTimer();
-		logger.trace("Starting timer");
+		logger.trace("Starting timer, delay: " + msDelay);
 		timer.setInitialDelay(0);
 		timer.setDelay(msDelay);
 		timer.setRepeats(true);

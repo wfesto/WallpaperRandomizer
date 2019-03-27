@@ -17,15 +17,22 @@ public class Settings extends Observable implements Serializable, Cloneable {
 
 	private static final Logger logger = LogManager.getLogger(Settings.class);
 
+	// TODO: convert to enums or other best practice
+
 	public final static int MODE_SINGLE_FILE = 0;
 	public final static int MODE_MULTI_FILE = 1;
 	public final static int MODE_SINGLE_DIR = 2;
+
+	public final static int MODE_DELAY_SECONDS = 0;
+	public final static int MODE_DELAY_MINUTES = 1;
+	public final static int MODE_DELAY_HOURS = 2;
 
 	protected String currentWallpaper;
 	protected String filePath;
 	protected String currentDir;
 	protected int currentMode;
-	protected int changeDelay;
+	protected int changeDelay = 0;
+	protected int changeDelayMode;
 	protected int listIdx = 0;
 	protected boolean recurseSubDirs;
 	protected boolean randomizeList;
@@ -51,9 +58,22 @@ public class Settings extends Observable implements Serializable, Cloneable {
 		this.setFileList(null);
 	}
 
+	public int getCalcDelay() {
+		int delay = this.changeDelay;
+		switch (this.changeDelayMode) {
+			case MODE_DELAY_HOURS :
+				delay *= 60;
+			case MODE_DELAY_MINUTES :
+				delay *= 60;
+			case MODE_DELAY_SECONDS :
+				delay *= 1000;
+				break;
+		}
+		return delay;
+	}
+
 	public List<String> getFileList() {
 		return (this.fileList = (this.fileList == null ? new LinkedList<String>() : this.fileList));
-
 	}
 
 	public Object clone() {

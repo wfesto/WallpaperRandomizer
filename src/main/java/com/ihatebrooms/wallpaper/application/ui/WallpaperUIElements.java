@@ -31,6 +31,7 @@ import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 
 //TODO: file list manipulation - reordering, delete, preview, etc
+//TODO: consider using quartz to allow more flexible scheduling options (once per day, specific time, etc)
 public class WallpaperUIElements {
 
 	private static final Logger logger = LogManager.getLogger(WallpaperUIElements.class);
@@ -45,6 +46,7 @@ public class WallpaperUIElements {
 	public final CheckBox randomCB = new CheckBox(resourceBundle.getString("checkbox.label.randomizeListCB"));
 	public final CheckBox recurseCB = new CheckBox(resourceBundle.getString("checkbox.label.recurseSubDirsCB"));
 	public final TextField changeDelay = new TextField("");
+	public final ToggleGroup changeDelayModeGroup = new ToggleGroup();
 	public final TextField currentSelectionTextField = new TextField();
 	public final ImageViewExt previewImageView = new ImageViewExt();
 	public final ListView<String> fileListView = new ListView<>();
@@ -54,9 +56,9 @@ public class WallpaperUIElements {
 		int colIdx = 0;
 		primary.setTitle(resourceBundle.getString("window.label.title"));
 
-		RadioButton singleFileRButton = new RadioButton(resourceBundle.getString("button.radio.label.singleFileRadioButton"));
-		RadioButton multiFileRButton = new RadioButton(resourceBundle.getString("button.radio.label.multiFileRadioButton"));
-		RadioButton singleDirRButton = new RadioButton(resourceBundle.getString("button.radio.label.directoryRadioButton"));
+		RadioButton singleFileRButton = new RadioButton(resourceBundle.getString("button.radio.label.mode.singleFileRadioButton"));
+		RadioButton multiFileRButton = new RadioButton(resourceBundle.getString("button.radio.label.mode.multiFileRadioButton"));
+		RadioButton singleDirRButton = new RadioButton(resourceBundle.getString("button.radio.label.mode.directoryRadioButton"));
 		singleFileRButton.setToggleGroup(modeRadioGroup);
 		singleFileRButton.setUserData(Settings.MODE_SINGLE_FILE);
 		multiFileRButton.setToggleGroup(modeRadioGroup);
@@ -66,7 +68,7 @@ public class WallpaperUIElements {
 
 		HBox modeHBox = new HBox();
 		VBox modeVBox = new VBox();
-		modeVBox.getChildren().add(new Label(resourceBundle.getString("button.radio.group.label.fileModeRadioGroup")));
+		modeVBox.getChildren().add(new Label(resourceBundle.getString("button.radio.group.label.mode.fileModeRadioGroup")));
 		modeVBox.getChildren().add(singleFileRButton);
 		modeVBox.getChildren().add(multiFileRButton);
 		modeVBox.getChildren().add(singleDirRButton);
@@ -85,7 +87,25 @@ public class WallpaperUIElements {
 		HBox delayHBox = new HBox();
 		delayHBox.getChildren().add(new Label(resourceBundle.getString("text.field.label.delayChangeTextField")));
 		delayHBox.getChildren().add(changeDelay);
+		delayHBox.setSpacing(5);
 		optVBox.getChildren().add(delayHBox);
+
+		HBox delayModeHBox = new HBox();
+		RadioButton delayModeSecondsRButton = new RadioButton(resourceBundle.getString("button.radio.label.delay.delayModeSecondsRadioButton"));
+		RadioButton delayModeMinutesRButton = new RadioButton(resourceBundle.getString("button.radio.label.delay.delayModeMinutesRadioButton"));
+		RadioButton delayModeHoursRButton = new RadioButton(resourceBundle.getString("button.radio.label.delay.delayModeHoursRadioButton"));
+		delayModeSecondsRButton.setToggleGroup(changeDelayModeGroup);
+		delayModeSecondsRButton.setUserData(Settings.MODE_DELAY_SECONDS);
+		delayModeMinutesRButton.setToggleGroup(changeDelayModeGroup);
+		delayModeMinutesRButton.setUserData(Settings.MODE_DELAY_MINUTES);
+		delayModeHoursRButton.setToggleGroup(changeDelayModeGroup);
+		delayModeHoursRButton.setUserData(Settings.MODE_DELAY_HOURS);
+		delayModeHBox.getChildren().add(delayModeSecondsRButton);
+		delayModeHBox.getChildren().add(delayModeMinutesRButton);
+		delayModeHBox.getChildren().add(delayModeHoursRButton);
+		delayModeHBox.setSpacing(5);
+
+		optVBox.getChildren().add(delayModeHBox);
 
 		modeHBox.getChildren().add(optVBox);
 
@@ -112,7 +132,8 @@ public class WallpaperUIElements {
 	}
 
 	public void initializeState(Settings settings) {
-		setSelectedRadioButton(modeRadioGroup, settings);
+		setSelectedRadioButton(modeRadioGroup, settings.getCurrentMode());
+		setSelectedRadioButton(changeDelayModeGroup, settings.getChangeDelayMode());
 
 		randomCB.setSelected(settings.isRandomizeList());
 		randomCB.setDisable(settings.getCurrentMode() == Settings.MODE_SINGLE_FILE);
@@ -120,7 +141,7 @@ public class WallpaperUIElements {
 		recurseCB.setSelected(settings.isRecurseSubDirs());
 		recurseCB.setDisable(settings.getCurrentMode() != Settings.MODE_SINGLE_DIR);
 
-		changeDelay.setText(Integer.toString(settings.getChangeDelay() / 1000));
+		changeDelay.setText(Integer.toString(settings.getChangeDelay()));
 
 		currentSelectionTextField.setEditable(false);
 		if (settings.getFilePath() != null) {
@@ -202,7 +223,13 @@ public class WallpaperUIElements {
 				logger.error("Unable to parse value: " + changeDelay.getText());
 				logger.error(e.getMessage());
 			}
-			unsavedSettings.setChangeDelay(1000 * newVal);
+			unsavedSettings.setChangeDelay(newVal);
+		});
+
+		changeDelayModeGroup.selectedToggleProperty().addListener((x, y, newToggle) -> {
+			int newVal = ((Integer) newToggle.getUserData()).intValue();
+			unsavedSettings.setChangeDelayMode(newVal);
+			saveButton.setDisable(false);
 		});
 
 		unsavedSettings.addObserver(new SettingsUpdateObserver(fileListView));
@@ -242,9 +269,9 @@ public class WallpaperUIElements {
 		return newFileButtonText;
 	}
 
-	private void setSelectedRadioButton(ToggleGroup group, Settings settings) {
+	private void setSelectedRadioButton(ToggleGroup group, int selectedValue) {
 		for (Toggle button : group.getToggles()) {
-			if (settings.getCurrentMode() == ((Integer) button.getUserData()).intValue()) {
+			if (selectedValue == ((Integer) button.getUserData()).intValue()) {
 				button.setSelected(true);
 				return;
 			}
