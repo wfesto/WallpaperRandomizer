@@ -46,16 +46,16 @@ public class WallpaperApplication extends Application {
 
 	@Override
 	public void start(Stage primary) throws Exception {
+		this.primary = primary;
 		String activeProfile = SettingsReaderWriter.getActiveProfile();
 		Map<String, Settings> settingsMap = SettingsReaderWriter.readSettings();
 		savedSettings = settingsMap.get(activeProfile);
-		unsavedSettings = (Settings) savedSettings.clone();
+		unsavedSettings = new Settings(savedSettings);
 
 		logger.trace("Full settings map:\n" + settingsMap.toString());
 		logger.debug("Application loading settings:\n" + savedSettings.toString());
 
 		Platform.setImplicitExit(false);
-		this.primary = primary;
 
 		GridPane rootPane = new GridPane();
 		rootPane.setAlignment(Pos.TOP_LEFT);
@@ -65,7 +65,9 @@ public class WallpaperApplication extends Application {
 
 		// TODO: Better resolution handling, possibly saving?
 		Scene scene = new Scene(rootPane, 600, 480);
-		ui = this.createContent(rootPane, primary);
+		WallpaperUIElements ui = new WallpaperUIElements(resourceBundle, rootPane, primary);
+		ui.initializeState(savedSettings);
+		ui.addEventProcessors(primary, unsavedSettings, savedSettings);
 		primary.setScene(scene);
 
 		SwingUtilities.invokeLater(this::addAppToTray);
@@ -76,14 +78,6 @@ public class WallpaperApplication extends Application {
 			ui.saveButton.fire();
 			ui.saveButton.setDisable(true);
 		}
-	}
-
-	private WallpaperUIElements createContent(GridPane rootPane, Stage primary) throws Exception {
-		WallpaperUIElements ui = new WallpaperUIElements(resourceBundle, rootPane, primary);
-		ui.initializeState(savedSettings);
-		ui.addEventProcessors(primary, unsavedSettings, savedSettings);
-
-		return ui;
 	}
 
 	private void showStage() {

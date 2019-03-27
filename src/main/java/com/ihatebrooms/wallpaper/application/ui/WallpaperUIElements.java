@@ -35,7 +35,7 @@ public class WallpaperUIElements {
 
 	private static final Logger logger = LogManager.getLogger(WallpaperUIElements.class);
 
-	protected ResourceBundle resourceBundle;
+	protected final ResourceBundle resourceBundle;
 	public final ToggleGroup modeRadioGroup;
 	public final Button chooseFileButton;
 	public final Button saveButton;
@@ -156,10 +156,10 @@ public class WallpaperUIElements {
 		changeDelay.setText(Integer.toString(settings.getChangeDelay()));
 
 		currentSelectionTextField.setEditable(false);
-		if (settings.getFilePath() != null) {
-			currentSelectionTextField.setText(settings.getFilePath());
-		} else {
+		if (settings.getCurrentMode() == Settings.MODE_SINGLE_DIR) {
 			currentSelectionTextField.setText(settings.getCurrentDir());
+		} else {
+			currentSelectionTextField.setText(settings.getFilePath());
 		}
 
 		chooseFileButton.setText(this.getChooseButtonText(settings.getCurrentMode()));
@@ -185,12 +185,11 @@ public class WallpaperUIElements {
 
 		chooseFileButton.setOnAction(new FileChoiceEventHandler(primary, unsavedSettings, saveButton));
 		revertButton.setOnAction(new RevertButtonEventHandler(this, unsavedSettings, savedSettings));
-		SaveChangesButtonEventHandler buttonHandler = new SaveChangesButtonEventHandler(unsavedSettings, savedSettings, saveButton);
+		SaveChangesButtonEventHandler buttonHandler = new SaveChangesButtonEventHandler(unsavedSettings, savedSettings, saveButton, resourceBundle);
 		saveButton.setOnAction(buttonHandler);
 		advanceButton.setOnAction(buttonHandler);
 
 		modeRadioGroup.selectedToggleProperty().addListener((x, y, newToggle) -> {
-			currentSelectionTextField.setText(unsavedSettings.getFilePath());
 			int newVal = ((Integer) newToggle.getUserData()).intValue();
 			unsavedSettings.setCurrentMode(newVal);
 			saveButton.setDisable(false);
@@ -210,11 +209,12 @@ public class WallpaperUIElements {
 				recurse = true;
 			} else if (newVal == Settings.MODE_MULTI_FILE) {
 				if (CollectionUtils.isNotEmpty(unsavedSettings.getFileList())) {
-					currentSelectionText = unsavedSettings.getFileList().get(0);
+					currentSelectionText = unsavedSettings.getFileList().get(Math.max(0, unsavedSettings.getListIdx()));
 				}
 				showImage = false;
 			}
 
+			unsavedSettings.resetListIdx();
 			recurseCB.setDisable(!recurse);
 			randomCB.setDisable(!random);
 			saveButton.setDisable(false);
@@ -246,6 +246,7 @@ public class WallpaperUIElements {
 
 		unsavedSettings.addObserver(new SettingsUpdateObserver(fileListView));
 		unsavedSettings.addObserver(previewImageView);
+		savedSettings.addObserver(previewImageView);
 
 		// TODO: better programmatic handling of spacing for image view?
 

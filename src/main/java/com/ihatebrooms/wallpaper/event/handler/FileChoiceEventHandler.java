@@ -66,8 +66,6 @@ public class FileChoiceEventHandler implements EventHandler<ActionEvent> {
 			File file = directoryChooser.showDialog(parentWindow);
 			if (file != null) {
 				settings.setCurrentDir(file.getAbsolutePath());
-				DirectoryWalker.updateSettingsDirectoryFiles(settings);
-				settings.resetListIdx();
 				selectionMade = true;
 			}
 		}

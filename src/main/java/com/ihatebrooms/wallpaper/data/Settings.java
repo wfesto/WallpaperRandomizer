@@ -10,10 +10,12 @@ import org.apache.logging.log4j.Logger;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
 @Data
 @EqualsAndHashCode(callSuper = false)
-public class Settings extends Observable implements Serializable, Cloneable {
+@NoArgsConstructor
+public class Settings extends Observable implements Serializable {
 
 	private static final Logger logger = LogManager.getLogger(Settings.class);
 
@@ -38,6 +40,10 @@ public class Settings extends Observable implements Serializable, Cloneable {
 	protected boolean randomizeList;
 	protected List<String> fileList;
 
+	public Settings(Settings copyFrom) {
+		this.copyFrom(copyFrom);
+	}
+
 	public void addFiles(List<String> newList) {
 		this.getFileList().addAll(newList);
 	}
@@ -54,7 +60,7 @@ public class Settings extends Observable implements Serializable, Cloneable {
 
 	public void setCurrentMode(int i) {
 		this.currentMode = i;
-		this.listIdx = -1;
+		this.resetListIdx();
 		this.setFileList(null);
 	}
 
@@ -76,17 +82,17 @@ public class Settings extends Observable implements Serializable, Cloneable {
 		return (this.fileList = (this.fileList == null ? new LinkedList<String>() : this.fileList));
 	}
 
-	public Object clone() {
-		Settings newSettings = new Settings();
-		try {
-			newSettings = (Settings) super.clone();
-			newSettings.setFileList(new LinkedList<>());
-			newSettings.getFileList().addAll(this.getFileList());
-		} catch (CloneNotSupportedException e) {
-			logger.error("Error cloning settings:");
-			logger.error(e.getMessage());
-		}
-
-		return newSettings;
+	public void copyFrom(Settings copyFrom) {
+		this.currentWallpaper = copyFrom.currentWallpaper;
+		this.setFilePath(copyFrom.filePath);
+		this.currentDir = copyFrom.currentDir;
+		this.currentMode = copyFrom.currentMode;
+		this.changeDelay = copyFrom.changeDelay;
+		this.changeDelayMode = copyFrom.changeDelayMode;
+		this.listIdx = copyFrom.listIdx;
+		this.recurseSubDirs = copyFrom.recurseSubDirs;
+		this.randomizeList = copyFrom.randomizeList;
+		this.fileList = new LinkedList<>();
+		this.fileList.addAll(copyFrom.getFileList());
 	}
 }

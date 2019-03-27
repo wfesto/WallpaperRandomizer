@@ -10,15 +10,15 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public class RevertButtonEventHandler implements EventHandler<ActionEvent> {
 
-	protected WallpaperUIElements ui;
-	protected Settings unsavedSettings;
-	protected Settings savedSettings;
+	protected final WallpaperUIElements ui;
+	protected final Settings unsavedSettings;
+	protected final Settings savedSettings;
 
 	@Override
 	public void handle(ActionEvent arg0) {
 		ui.saveButton.setDisable(true);
 		ui.initializeState(savedSettings);
-		this.unsavedSettings = (Settings) savedSettings.clone();
+		this.unsavedSettings.copyFrom(savedSettings);
 	}
 
 }
