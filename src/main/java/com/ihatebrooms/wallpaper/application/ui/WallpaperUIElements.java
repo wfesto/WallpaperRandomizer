@@ -1,6 +1,5 @@
 package com.ihatebrooms.wallpaper.application.ui;
 
-import java.util.Locale;
 import java.util.ResourceBundle;
 
 import org.apache.commons.collections4.CollectionUtils;
@@ -51,7 +50,7 @@ public class WallpaperUIElements {
 	public final ListView<String> fileListView;
 
 	public WallpaperUIElements(ResourceBundle resourceBundle, GridPane rootPane, Stage primary) throws Exception {
-		this.resourceBundle = ResourceBundle.getBundle("i18n", Locale.getDefault());
+		this.resourceBundle = resourceBundle;
 
 		modeRadioGroup = new ToggleGroup();
 		chooseFileButton = new Button();
