@@ -1,10 +1,14 @@
 package com.ihatebrooms.wallpaper.application;
 
-import java.io.IOException;
+import java.awt.SystemTray;
+import java.awt.Toolkit;
+import java.awt.TrayIcon;
 import java.net.URL;
+import java.util.Locale;
 import java.util.Map;
+import java.util.ResourceBundle;
 
-import javax.imageio.ImageIO;
+import javax.swing.ImageIcon;
 import javax.swing.SwingUtilities;
 
 import org.apache.logging.log4j.LogManager;
@@ -26,6 +30,7 @@ import javafx.stage.Stage;
 
 public class WallpaperApplication extends Application {
 
+	protected final ResourceBundle resourceBundle = ResourceBundle.getBundle("i18n", Locale.getDefault());
 	private static final Logger logger = LogManager.getLogger(WallpaperApplication.class);
 
 	protected Settings savedSettings;
@@ -70,7 +75,7 @@ public class WallpaperApplication extends Application {
 		logger.trace("Full settings map:\n" + settingsMap.toString());
 		logger.debug("Application loading settings:\n" + savedSettings.toString());
 
-		WallpaperUIElements ui = new WallpaperUIElements(rootPane, primary);
+		WallpaperUIElements ui = new WallpaperUIElements(resourceBundle, rootPane, primary);
 		ui.initializeState(savedSettings);
 		ui.addEventProcessors(primary, unsavedSettings, savedSettings);
 
@@ -86,23 +91,21 @@ public class WallpaperApplication extends Application {
 
 	private void addAppToTray() {
 		try {
-			java.awt.Toolkit.getDefaultToolkit();
-			if (!java.awt.SystemTray.isSupported()) {
+			Toolkit toolkit = Toolkit.getDefaultToolkit();
+			if (!SystemTray.isSupported()) {
 				logger.error("No system tray support, application exiting.");
 				Platform.exit();
 			}
 
 			// set up a system tray icon.
-			java.awt.SystemTray tray = java.awt.SystemTray.getSystemTray();
-			// TODO: find icon
-			// TODO: include icon in jar
-			URL imageLoc = new URL("file:///E:\\Pictures\\Other\\untitled1.gif");
-			java.awt.Image image = ImageIO.read(imageLoc);
-			java.awt.TrayIcon trayIcon = new java.awt.TrayIcon(image);
+			SystemTray tray = SystemTray.getSystemTray();
+			URL imageUrl = ClassLoader.getSystemResource("images/appIcon.png");
+			TrayIcon trayIcon = new TrayIcon(new ImageIcon(imageUrl).getImage(), resourceBundle.getString("tray.icon.label.mouseover"));
+			trayIcon.setImageAutoSize(true);
 
 			trayIcon.addActionListener(event -> Platform.runLater(this::showStage));
 
-			java.awt.MenuItem exitItem = new java.awt.MenuItem("Exit");
+			java.awt.MenuItem exitItem = new java.awt.MenuItem("tray.menu.label.exit");
 			exitItem.addActionListener(event -> {
 				Platform.exit();
 				tray.remove(trayIcon);
@@ -113,7 +116,7 @@ public class WallpaperApplication extends Application {
 			trayIcon.setPopupMenu(popup);
 
 			tray.add(trayIcon);
-		} catch (java.awt.AWTException | IOException e) {
+		} catch (java.awt.AWTException e) {
 			logger.error("Unable to init system tray");
 			logger.error(e.getMessage());
 		}

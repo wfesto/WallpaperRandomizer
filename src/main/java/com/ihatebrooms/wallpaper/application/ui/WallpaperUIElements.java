@@ -36,22 +36,35 @@ public class WallpaperUIElements {
 
 	private static final Logger logger = LogManager.getLogger(WallpaperUIElements.class);
 
-	protected final ResourceBundle resourceBundle = ResourceBundle.getBundle("i18n", Locale.getDefault());
+	protected ResourceBundle resourceBundle;
+	public final ToggleGroup modeRadioGroup;
+	public final Button chooseFileButton;
+	public final Button saveButton;
+	public final Button revertButton;
+	public final Button advanceButton;
+	public final CheckBox randomCB;
+	public final CheckBox recurseCB;
+	public final TextField changeDelay;
+	public final ToggleGroup changeDelayModeGroup;
+	public final TextField currentSelectionTextField;
+	public final ImageViewExt previewImageView;
+	public final ListView<String> fileListView;
 
-	public final ToggleGroup modeRadioGroup = new ToggleGroup();
-	public final Button chooseFileButton = new Button();
-	public final Button saveButton = new Button(resourceBundle.getString("button.label.saveChangesButton"));
-	public final Button revertButton = new Button(resourceBundle.getString("button.label.revertChangesButton"));
-	public final Button advanceButton = new Button(resourceBundle.getString("button.label.advanceWallpaperButton"));
-	public final CheckBox randomCB = new CheckBox(resourceBundle.getString("checkbox.label.randomizeListCB"));
-	public final CheckBox recurseCB = new CheckBox(resourceBundle.getString("checkbox.label.recurseSubDirsCB"));
-	public final TextField changeDelay = new TextField("");
-	public final ToggleGroup changeDelayModeGroup = new ToggleGroup();
-	public final TextField currentSelectionTextField = new TextField();
-	public final ImageViewExt previewImageView = new ImageViewExt();
-	public final ListView<String> fileListView = new ListView<>();
+	public WallpaperUIElements(ResourceBundle resourceBundle, GridPane rootPane, Stage primary) throws Exception {
+		this.resourceBundle = ResourceBundle.getBundle("i18n", Locale.getDefault());
 
-	public WallpaperUIElements(GridPane rootPane, Stage primary) throws Exception {
+		modeRadioGroup = new ToggleGroup();
+		chooseFileButton = new Button();
+		saveButton = new Button(resourceBundle.getString("button.label.saveChangesButton"));
+		revertButton = new Button(resourceBundle.getString("button.label.revertChangesButton"));
+		advanceButton = new Button(resourceBundle.getString("button.label.advanceWallpaperButton"));
+		randomCB = new CheckBox(resourceBundle.getString("checkbox.label.randomizeListCB"));
+		recurseCB = new CheckBox(resourceBundle.getString("checkbox.label.recurseSubDirsCB"));
+		changeDelay = new TextField("");
+		changeDelayModeGroup = new ToggleGroup();
+		currentSelectionTextField = new TextField();
+		previewImageView = new ImageViewExt();
+		fileListView = new ListView<>();
 
 		int colIdx = 0;
 		primary.setTitle(resourceBundle.getString("window.label.title"));
