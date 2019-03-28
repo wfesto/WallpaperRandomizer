@@ -50,7 +50,8 @@ public class WallpaperApplication extends Application {
 		String activeProfile = SettingsReaderWriter.getActiveProfile();
 		Map<String, Settings> settingsMap = SettingsReaderWriter.readSettings();
 		savedSettings = settingsMap.get(activeProfile);
-		unsavedSettings = new Settings(savedSettings);
+		unsavedSettings = new Settings();
+		unsavedSettings.copyFrom(savedSettings);
 
 		logger.trace("Full settings map:\n" + settingsMap.toString());
 		logger.debug("Application loading settings:\n" + savedSettings.toString());
@@ -65,8 +66,8 @@ public class WallpaperApplication extends Application {
 
 		// TODO: Better resolution handling, possibly saving?
 		Scene scene = new Scene(rootPane, 600, 480);
-		WallpaperUIElements ui = new WallpaperUIElements(resourceBundle, rootPane, primary);
-		ui.initializeState(savedSettings);
+		ui = new WallpaperUIElements(resourceBundle, rootPane, primary);
+		ui.initializeState(unsavedSettings);
 		ui.addEventProcessors(primary, unsavedSettings, savedSettings);
 		primary.setScene(scene);
 
@@ -95,7 +96,6 @@ public class WallpaperApplication extends Application {
 				Platform.exit();
 			}
 
-			// set up a system tray icon.
 			SystemTray tray = SystemTray.getSystemTray();
 			URL imageUrl = ClassLoader.getSystemResource("images/appIcon.png");
 			TrayIcon trayIcon = new TrayIcon(new ImageIcon(imageUrl).getImage(), resourceBundle.getString("tray.icon.label.mouseover"));
