@@ -2,16 +2,14 @@ package com.ihatebrooms.wallpaper.application.ui;
 
 import java.util.ResourceBundle;
 
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.ihatebrooms.wallpaper.application.ui.controls.FileListButtonController;
 import com.ihatebrooms.wallpaper.data.Settings;
 import com.ihatebrooms.wallpaper.event.handler.FileChoiceEventHandler;
-import com.ihatebrooms.wallpaper.event.handler.RevertButtonEventHandler;
 import com.ihatebrooms.wallpaper.event.handler.SaveChangesButtonEventHandler;
-import com.ihatebrooms.wallpaper.event.observer.SettingsUpdateObserver;
 import com.ihatebrooms.wallpaper.ext.javafx.scene.image.ImageViewExt;
 
 import javafx.scene.control.Button;
@@ -19,6 +17,7 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.RadioButton;
+import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleGroup;
@@ -43,11 +42,15 @@ public class WallpaperUIElements {
 	public final Button advanceButton;
 	public final CheckBox randomCB;
 	public final CheckBox recurseCB;
+	public final CheckBox duplicateCB;
 	public final TextField changeDelay;
 	public final ToggleGroup changeDelayModeGroup;
 	public final TextField currentSelectionTextField;
 	public final ImageViewExt previewImageView;
 	public final ListView<String> fileListView;
+	public final Button listUpButton;
+	public final Button listDownButton;
+	public final Button deleteListEntryButton;
 
 	public WallpaperUIElements(ResourceBundle resourceBundle, GridPane rootPane, Stage primary) throws Exception {
 		this.resourceBundle = resourceBundle;
@@ -59,11 +62,15 @@ public class WallpaperUIElements {
 		advanceButton = new Button(resourceBundle.getString("button.label.advanceWallpaperButton"));
 		randomCB = new CheckBox(resourceBundle.getString("checkbox.label.randomizeListCB"));
 		recurseCB = new CheckBox(resourceBundle.getString("checkbox.label.recurseSubDirsCB"));
+		duplicateCB = new CheckBox(resourceBundle.getString("checkbox.label.allowDuplicatesCB"));
 		changeDelay = new TextField("");
 		changeDelayModeGroup = new ToggleGroup();
 		currentSelectionTextField = new TextField();
 		previewImageView = new ImageViewExt();
 		fileListView = new ListView<>();
+		listUpButton = new Button(resourceBundle.getString("button.label.listViewButtons.up"));
+		listDownButton = new Button(resourceBundle.getString("button.label.listViewButtons.down"));
+		deleteListEntryButton = new Button(resourceBundle.getString("button.label.listViewButtons.delete"));
 
 		int colIdx = 0;
 		primary.setTitle(resourceBundle.getString("window.label.title"));
@@ -90,10 +97,12 @@ public class WallpaperUIElements {
 
 		VBox optVBox = new VBox();
 		randomCB.setAllowIndeterminate(false);
-
 		recurseCB.setAllowIndeterminate(false);
+		duplicateCB.setAllowIndeterminate(false);
+
 		optVBox.getChildren().add(randomCB);
 		optVBox.getChildren().add(recurseCB);
+		optVBox.getChildren().add(duplicateCB);
 		optVBox.setSpacing(5);
 
 		HBox delayHBox = new HBox();
@@ -117,21 +126,26 @@ public class WallpaperUIElements {
 		delayModeHBox.getChildren().add(delayModeHoursRButton);
 		delayModeHBox.setSpacing(5);
 
-		optVBox.getChildren().add(delayModeHBox);
+		changeDelay.disableProperty().addListener((arg0, arg1, newValue) -> delayModeHBox.setDisable(newValue));
 
+		optVBox.getChildren().add(delayModeHBox);
 		modeHBox.getChildren().add(optVBox);
 
 		VBox buttonVBox = new VBox();
 		saveButton.setDisable(true);
+		revertButton.setDisable(true);
 		buttonVBox.getChildren().add(saveButton);
 		buttonVBox.getChildren().add(revertButton);
 		buttonVBox.getChildren().add(advanceButton);
 		buttonVBox.setSpacing(10);
 
+		saveButton.disableProperty().addListener((arg0, arg1, newValue) -> revertButton.setDisable(newValue));
+
 		modeHBox.getChildren().add(buttonVBox);
 		modeHBox.setSpacing(10);
 		rootPane.add(modeHBox, 0, colIdx++);
 
+		currentSelectionTextField.setEditable(false);
 		GridPane.setColumnSpan(currentSelectionTextField, 2);
 		rootPane.add(currentSelectionTextField, 0, colIdx++);
 
@@ -140,7 +154,18 @@ public class WallpaperUIElements {
 		rootPane.add(previewImageView, 0, colIdx);
 
 		fileListView.setEditable(false);
-		rootPane.add(fileListView, 0, colIdx++);
+		fileListView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+		rootPane.add(fileListView, 0, colIdx);
+
+		VBox listViewButtons = new VBox();
+		listViewButtons.setSpacing(5);
+		listViewButtons.getChildren().add(listUpButton);
+		listViewButtons.getChildren().add(listDownButton);
+		listViewButtons.getChildren().add(deleteListEntryButton);
+		rootPane.add(listViewButtons, 1, colIdx++);
+
+		previewImageView.visibleProperty().addListener((arg0, arg1, newValue) -> fileListView.setVisible(!newValue));
+		fileListView.visibleProperty().addListener((arg0, arg1, newValue) -> listViewButtons.setVisible(newValue));
 	}
 
 	public void initializeState(Settings settings) {
@@ -153,13 +178,16 @@ public class WallpaperUIElements {
 		recurseCB.setSelected(settings.isRecurseSubDirs());
 		recurseCB.setDisable(settings.getCurrentMode() != Settings.MODE_SINGLE_DIR);
 
-		changeDelay.setText(Integer.toString(settings.getChangeDelay()));
+		duplicateCB.setSelected(settings.isAllowDuplicates());
+		duplicateCB.setDisable(settings.getCurrentMode() != Settings.MODE_MULTI_FILE);
 
-		currentSelectionTextField.setEditable(false);
+		changeDelay.setText(Integer.toString(settings.getChangeDelay()));
+		changeDelay.setDisable(settings.getCurrentMode() == Settings.MODE_SINGLE_FILE);
+
 		if (settings.getCurrentMode() == Settings.MODE_SINGLE_DIR) {
 			currentSelectionTextField.setText(settings.getCurrentDir());
 		} else {
-			currentSelectionTextField.setText(settings.getFilePath());
+			currentSelectionTextField.setText(settings.getFilePath().get());
 		}
 
 		chooseFileButton.setText(this.getChooseButtonText(settings.getCurrentMode()));
@@ -169,7 +197,8 @@ public class WallpaperUIElements {
 		previewImageView.setImage(settings.getFilePath());
 
 		fileListView.setVisible(settings.getCurrentMode() == Settings.MODE_MULTI_FILE);
-		fileListView.getItems().addAll(settings.getFileList());
+		fileListView.setItems(settings.getObservedList());
+		fileListView.refresh();
 	}
 
 	public void addEventProcessors(Stage primary, Settings unsavedSettings, Settings savedSettings) {
@@ -183,59 +212,27 @@ public class WallpaperUIElements {
 			saveButton.setDisable(false);
 		});
 
-		chooseFileButton.setOnAction(new FileChoiceEventHandler(primary, unsavedSettings, saveButton));
-		revertButton.setOnAction(new RevertButtonEventHandler(this, unsavedSettings, savedSettings));
-		SaveChangesButtonEventHandler buttonHandler = new SaveChangesButtonEventHandler(unsavedSettings, savedSettings, saveButton, resourceBundle);
-		saveButton.setOnAction(buttonHandler);
-		advanceButton.setOnAction(buttonHandler);
+		duplicateCB.setOnAction(ae -> {
+			unsavedSettings.setAllowDuplicates(duplicateCB.isSelected());
+			saveButton.setDisable(false);
+		});
 
 		modeRadioGroup.selectedToggleProperty().addListener((x, y, newToggle) -> {
-			int newVal = ((Integer) newToggle.getUserData()).intValue();
-			unsavedSettings.setCurrentMode(newVal);
+			unsavedSettings.setCurrentMode(((Integer) newToggle.getUserData()).intValue());
 			saveButton.setDisable(false);
-
-			boolean showImage = true;
-			boolean recurse = false;
-			boolean random = true;
-			String currentSelectionText = "";
-
-			if (newVal == Settings.MODE_SINGLE_FILE) {
-				currentSelectionText = unsavedSettings.getFilePath();
-				fileListView.getItems().clear();
-				unsavedSettings.setFileList(null);
-				random = false;
-			} else if (newVal == Settings.MODE_SINGLE_DIR) {
-				currentSelectionText = unsavedSettings.getCurrentDir();
-				recurse = true;
-			} else if (newVal == Settings.MODE_MULTI_FILE) {
-				if (CollectionUtils.isNotEmpty(unsavedSettings.getFileList())) {
-					currentSelectionText = unsavedSettings.getFileList().get(Math.max(0, unsavedSettings.getListIdx()));
-				}
-				showImage = false;
-			}
-
-			unsavedSettings.resetListIdx();
-			recurseCB.setDisable(!recurse);
-			randomCB.setDisable(!random);
-			saveButton.setDisable(false);
-			advanceButton.setDisable(!random);
-			previewImageView.setImage(unsavedSettings.getFilePath());
-			previewImageView.setVisible(showImage);
-			fileListView.setVisible(!showImage);
-			chooseFileButton.setText(this.getChooseButtonText(unsavedSettings.getCurrentMode()));
-			currentSelectionTextField.setText(currentSelectionText);
+			initializeState(unsavedSettings);
 		});
 
 		changeDelay.addEventHandler(KeyEvent.KEY_RELEASED, ae -> {
-			int newVal = 60 * 60;
+			String newText = changeDelay.getText();
 			try {
-				newVal = StringUtils.isNotEmpty(changeDelay.getText()) ? Integer.parseInt(changeDelay.getText()) : newVal;
-				saveButton.setDisable(false);
+				if (StringUtils.isNumeric(newText)) {
+					saveButton.setDisable(false);
+					unsavedSettings.setChangeDelay(Integer.parseInt(newText));
+				}
 			} catch (Exception e) {
-				logger.error("Unable to parse value: " + changeDelay.getText());
-				logger.error(e.getMessage());
+				logger.error("Unable to parse value: " + newText);
 			}
-			unsavedSettings.setChangeDelay(newVal);
 		});
 
 		changeDelayModeGroup.selectedToggleProperty().addListener((x, y, newToggle) -> {
@@ -244,9 +241,23 @@ public class WallpaperUIElements {
 			saveButton.setDisable(false);
 		});
 
-		unsavedSettings.addObserver(new SettingsUpdateObserver(fileListView));
-		unsavedSettings.addObserver(previewImageView);
-		savedSettings.addObserver(previewImageView);
+		revertButton.setOnAction(ae -> {
+			saveButton.setDisable(true);
+			initializeState(savedSettings);
+			unsavedSettings.copyFrom(savedSettings);
+		});
+
+		unsavedSettings.getFilePath().addListener(previewImageView);
+		chooseFileButton.setOnAction(new FileChoiceEventHandler(primary, unsavedSettings, saveButton));
+
+		FileListButtonController fileListButtonController = new FileListButtonController(this);
+		listUpButton.setOnAction(fileListButtonController);
+		listDownButton.setOnAction(fileListButtonController);
+		deleteListEntryButton.setOnAction(fileListButtonController);
+
+		SaveChangesButtonEventHandler buttonHandler = new SaveChangesButtonEventHandler(unsavedSettings, savedSettings, saveButton, resourceBundle);
+		saveButton.setOnAction(buttonHandler);
+		advanceButton.setOnAction(buttonHandler);
 
 		// TODO: better programmatic handling of spacing for image view?
 
@@ -266,7 +277,6 @@ public class WallpaperUIElements {
 			previewImageView.setFitWidth(primary.getWidth() - widthSpacing);
 			previewImageView.setFitHeight(primary.getHeight() - heightSpacing);
 		});
-
 	}
 
 	private String getChooseButtonText(int currentMode) {
@@ -290,5 +300,4 @@ public class WallpaperUIElements {
 			}
 		}
 	}
-
 }

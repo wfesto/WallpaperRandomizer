@@ -1,6 +1,8 @@
 package com.ihatebrooms.wallpaper.data;
 
 import java.io.Serializable;
+import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.logging.log4j.LogManager;
@@ -8,6 +10,8 @@ import org.apache.logging.log4j.Logger;
 
 import com.ihatebrooms.wallpaper.ext.javafx.beans.value.SimpleStringPropertyExt;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -37,14 +41,13 @@ public class Settings implements Serializable {
 	protected boolean recurseSubDirs;
 	protected boolean randomizeList;
 	protected boolean allowDuplicates;
-	protected final WPObservableList<String> fileList;
+	protected List<String> fileList = new LinkedList<>();
+	protected transient ObservableList<String> observedList = FXCollections.observableList(fileList);
 
-	public Settings() {
-		fileList = new WPObservableList<>();
-	}
-
-	public void addFiles(List<String> newList) {
-		this.fileList.addAll(newList);
+	public void addFiles(Collection<String> incFiles) {
+		for (String inc : incFiles) {
+			observedList.add(inc);
+		}
 	}
 
 	public void resetListIdx() {
@@ -84,7 +87,8 @@ public class Settings implements Serializable {
 		this.listIdx = copyFrom.listIdx;
 		this.recurseSubDirs = copyFrom.recurseSubDirs;
 		this.randomizeList = copyFrom.randomizeList;
-		this.fileList.clear();
-		this.fileList.addAll(copyFrom.getFileList());
+		this.allowDuplicates = copyFrom.allowDuplicates;
+		this.fileList = new LinkedList<>(copyFrom.fileList);
+		this.observedList = FXCollections.observableList(fileList);
 	}
 }

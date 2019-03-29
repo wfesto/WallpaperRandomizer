@@ -58,9 +58,9 @@ public class FileChoiceEventHandler implements EventHandler<ActionEvent> {
 						.filter(s -> settings.isAllowDuplicates() || !settings.getFileList().contains(s))
 						.collect(toList());
 				//@formatter:on
-				logger.trace("Adding files:");
-				logger.trace(pathStringList.toString());
 				if (CollectionUtils.isNotEmpty(pathStringList)) {
+					logger.trace("Adding files:");
+					logger.trace(pathStringList.toString());
 					settings.addFiles(pathStringList);
 					settings.setCurrentDir(new File(pathStringList.get(0)).getParent());
 				}
