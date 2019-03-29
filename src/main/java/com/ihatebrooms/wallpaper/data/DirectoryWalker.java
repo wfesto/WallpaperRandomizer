@@ -28,7 +28,7 @@ public class DirectoryWalker {
 			fileList = Files.walk(Paths.get(directory), walkDepth)
 				.map(p -> p.toFile())
 				.filter(p -> p.isFile())
-				.filter(p -> isImage(p))
+				.filter(p -> isImageFile(p))
 				.map(p -> p.getAbsolutePath())
 				.collect(toList());
 			//@formatter:on
@@ -46,7 +46,11 @@ public class DirectoryWalker {
 		return new ExtensionFilter("Images", Arrays.stream(imgTypes).map(p -> "*.".concat(p)).collect(toList()));
 	}
 
-	public static boolean isImage(File f) {
+	public static boolean isImageFile(File f) {
+		if (!f.isFile()) {
+			return false;
+		}
+
 		boolean found = false;
 		for (int i = 0; i < imgTypes.length && !found; ++i) {
 			found = f.getName().toLowerCase().endsWith(imgTypes[i].toLowerCase());

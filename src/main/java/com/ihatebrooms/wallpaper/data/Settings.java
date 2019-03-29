@@ -1,21 +1,19 @@
 package com.ihatebrooms.wallpaper.data;
 
 import java.io.Serializable;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Observable;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.ihatebrooms.wallpaper.ext.javafx.beans.value.SimpleStringPropertyExt;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
 @Data
 @EqualsAndHashCode(callSuper = false)
-@NoArgsConstructor
-public class Settings extends Observable implements Serializable {
+public class Settings implements Serializable {
 
 	private static final Logger logger = LogManager.getLogger(Settings.class);
 
@@ -30,7 +28,7 @@ public class Settings extends Observable implements Serializable {
 	public final static int MODE_DELAY_HOURS = 2;
 
 	protected String currentWallpaper;
-	protected String filePath;
+	protected SimpleStringPropertyExt filePath = new SimpleStringPropertyExt();
 	protected String currentDir;
 	protected int currentMode;
 	protected int changeDelay = 0;
@@ -38,30 +36,28 @@ public class Settings extends Observable implements Serializable {
 	protected int listIdx = 0;
 	protected boolean recurseSubDirs;
 	protected boolean randomizeList;
-	protected List<String> fileList;
+	protected boolean allowDuplicates;
+	protected final WPObservableList<String> fileList;
 
-	public Settings(Settings copyFrom) {
-		this.copyFrom(copyFrom);
+	public Settings() {
+		fileList = new WPObservableList<>();
 	}
 
 	public void addFiles(List<String> newList) {
-		this.getFileList().addAll(newList);
-	}
-
-	public void setFilePath(String s) {
-		this.filePath = s;
-		this.setChanged();
-		this.notifyObservers();
+		this.fileList.addAll(newList);
 	}
 
 	public void resetListIdx() {
 		this.listIdx = -1;
 	}
+	public void setFilePath(String s) {
+		this.filePath.set(s);
+	}
 
 	public void setCurrentMode(int i) {
 		this.currentMode = i;
 		this.resetListIdx();
-		this.setFileList(null);
+		this.fileList.clear();
 	}
 
 	public int getCalcDelay() {
@@ -78,13 +74,9 @@ public class Settings extends Observable implements Serializable {
 		return delay;
 	}
 
-	public List<String> getFileList() {
-		return (this.fileList = (this.fileList == null ? new LinkedList<String>() : this.fileList));
-	}
-
 	public void copyFrom(Settings copyFrom) {
 		this.currentWallpaper = copyFrom.currentWallpaper;
-		this.setFilePath(copyFrom.filePath);
+		this.filePath.set(copyFrom.getFilePath().get());
 		this.currentDir = copyFrom.currentDir;
 		this.currentMode = copyFrom.currentMode;
 		this.changeDelay = copyFrom.changeDelay;
@@ -92,7 +84,7 @@ public class Settings extends Observable implements Serializable {
 		this.listIdx = copyFrom.listIdx;
 		this.recurseSubDirs = copyFrom.recurseSubDirs;
 		this.randomizeList = copyFrom.randomizeList;
-		this.fileList = new LinkedList<>();
+		this.fileList.clear();
 		this.fileList.addAll(copyFrom.getFileList());
 	}
 }

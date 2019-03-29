@@ -21,6 +21,7 @@ import com.ihatebrooms.wallpaper.data.Settings;
 import com.ihatebrooms.wallpaper.data.SettingsReaderWriter;
 
 import javafx.application.Platform;
+import javafx.beans.property.StringProperty;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.control.Alert;
@@ -41,15 +42,15 @@ public class SaveChangesButtonEventHandler implements EventHandler<ActionEvent>,
 		this.unsavedSettings = unsavedSettings;
 		this.savedSettings = savedSettings;
 		this.saveButton = saveButton;
-		timer = new Timer(0, this);
 		this.resourceBundle = resourceBundle;
+		timer = new Timer(0, this);
 	}
 
 	@Override
 	public void handle(ActionEvent arg0) {
 		if (arg0.getSource() == saveButton) {
-			if (unsavedSettings.getCalcDelay() <= 0) {
-				logger.error("Cannot have error <= 0");
+			if (unsavedSettings.getCurrentMode() != Settings.MODE_SINGLE_FILE && unsavedSettings.getCalcDelay() <= 0) {
+				logger.error("Cannot have delay <= 0");
 				Alert errorAlert = new Alert(AlertType.ERROR);
 				errorAlert.setHeaderText(resourceBundle.getString("alert.invalidDelay.header"));
 				errorAlert.setContentText(resourceBundle.getString("alert.invalidDelay.text"));
@@ -116,6 +117,10 @@ public class SaveChangesButtonEventHandler implements EventHandler<ActionEvent>,
 		});
 	}
 
+	protected void updateWallpaper(StringProperty filePath) {
+		this.updateWallpaper(filePath.getValue());
+	}
+
 	protected void updateWallpaper(String filePath) {
 		try {
 			WallpaperUpdater.updateWallpaper(filePath);
@@ -148,7 +153,7 @@ public class SaveChangesButtonEventHandler implements EventHandler<ActionEvent>,
 
 		Path filePath = Paths.get(path);
 		boolean exists = Files.exists(filePath);
-		boolean isImageFile = exists && filePath.toFile().isFile() && DirectoryWalker.isImage(filePath.toFile());
+		boolean isImageFile = exists && DirectoryWalker.isImageFile(filePath.toFile());
 
 		return isImageFile;
 	}

@@ -27,9 +27,9 @@ public class FileChoiceEventHandler implements EventHandler<ActionEvent> {
 
 	private static final Logger logger = LogManager.getLogger(FileChoiceEventHandler.class);
 
-	protected Window parentWindow;
-	protected Settings settings;
-	protected Button saveButton;
+	protected final Window parentWindow;
+	protected final Settings settings;
+	protected final Button saveButton;
 
 	@Override
 	public void handle(ActionEvent arg0) {
@@ -43,7 +43,7 @@ public class FileChoiceEventHandler implements EventHandler<ActionEvent> {
 
 		if (settings.getCurrentMode() == Settings.MODE_SINGLE_FILE) {
 			File file = fileChooser.showOpenDialog(parentWindow);
-			if (file != null && DirectoryWalker.isImage(file)) {
+			if (file != null && DirectoryWalker.isImageFile(file)) {
 				settings.setFilePath(file.getAbsolutePath());
 				settings.setCurrentDir(file.getParentFile().getAbsolutePath());
 				selectionMade = true;
@@ -51,11 +51,19 @@ public class FileChoiceEventHandler implements EventHandler<ActionEvent> {
 		} else if (settings.getCurrentMode() == Settings.MODE_MULTI_FILE) {
 			List<File> fileList = fileChooser.showOpenMultipleDialog(parentWindow);
 			if (CollectionUtils.isNotEmpty(fileList)) {
-				List<String> pathStringList = fileList.stream().map(s -> s.getAbsolutePath()).collect(toList());
+				//@formatter:off
+				List<String> pathStringList =
+						fileList.stream()
+						.map(s -> s.getAbsolutePath())
+						.filter(s -> settings.isAllowDuplicates() || !settings.getFileList().contains(s))
+						.collect(toList());
+				//@formatter:on
 				logger.trace("Adding files:");
 				logger.trace(pathStringList.toString());
-				settings.addFiles(pathStringList);
-				settings.setCurrentDir(new File(pathStringList.get(Math.max(settings.getListIdx(), 0))).getParent());
+				if (CollectionUtils.isNotEmpty(pathStringList)) {
+					settings.addFiles(pathStringList);
+					settings.setCurrentDir(new File(pathStringList.get(0)).getParent());
+				}
 				selectionMade = true;
 			}
 		} else if (settings.getCurrentMode() == Settings.MODE_SINGLE_DIR) {
