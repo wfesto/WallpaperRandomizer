@@ -17,7 +17,7 @@
 		<apache.commons.lang3.version>3.8.1</apache.commons.lang3.version>
 		<jna.version>5.2.0</jna.version>
 		<joda.time.version>2.10.1</joda.time.version>
-		<log4j2.version>2.13.3</log4j2.version>
+		<log4j2.version>2.17.1</log4j2.version>
 		<lombok.version>1.18.4</lombok.version>
 	</properties>
 
